@@ -9,9 +9,9 @@ import threading
 from typing import Optional
 
 from pymodbus.client import ModbusTcpClient
-from pymodbus.constants import Endian
+#from pymodbus.payload import Endian
 from pymodbus.exceptions import ConnectionException
-from pymodbus.payload import BinaryPayloadDecoder
+#from pymodbus.payload import BinaryPayloadDecoder
 import voluptuous as vol
 
 from homeassistant.helpers.entity import Entity
@@ -157,7 +157,7 @@ class HaHeliothermModbusHub:
     def read_input_registers(self, address, count):
         """Read holding registers."""
         with self._lock:
-            return self._client.read_input_registers(address, count=count, slave=self._hostid)
+            return self._client.read_input_registers(address, count=count, device_id=self._hostid)
 
     def getsignednumber(self, number, bitlength=16):
         mask = (2**bitlength) - 1
@@ -232,33 +232,82 @@ class HaHeliothermModbusHub:
             temp = float(option["temperature"])
             await self.set_raumtemperatur(temp)
 
+        if entity.entity_description.key == "climate_rl_soll":
+            temp = float(option["temperature"])
+            await self.set_rl_soll(temp)
+
         if entity.entity_description.key == "climate_rlt_kuehlen":
             temp = float(option["temperature"])
             await self.set_rltkuehlen(temp)
 
+# --- hs/ategus: begin
+        if entity.entity_description.key == "climate_mkr1_raum_soll":
+            temp = float(option["temperature"])
+            await self.set_mkr1_raumtemperatur(temp)
+
+        if entity.entity_description.key == "climate_mkr1_rl_soll":
+            temp = float(option["temperature"])
+            await self.set_mkr1_rl_soll(temp)
+
+        if entity.entity_description.key == "climate_mkr1_rlt_kuehlen":
+            temp = float(option["temperature"])
+            await self.set_mkr1_rltkuehlen(temp)
+
+        if entity.entity_description.key == "climate_mkr2_raum_soll":
+            temp = float(option["temperature"])
+            await self.set_mkr2_raumtemperatur(temp)
+
+        if entity.entity_description.key == "climate_mkr2_rl_soll":
+            temp = float(option["temperature"])
+            await self.set_mkr2_rl_soll(temp)
+
+        if entity.entity_description.key == "climate_mkr2_rlt_kuehlen":
+            temp = float(option["temperature"])
+            await self.set_mkr2_rltkuehlen(temp)
+
+        if entity.entity_description.key == "climate_pv_heizen_offset":
+            temp = float(option["temperature"])
+            await self.set_pv_heizen_offset(temp)
+
+        if entity.entity_description.key == "climate_pv_kuehlen_offset":
+            temp = float(option["temperature"])
+            await self.set_pv_kuehlen_offset(temp)
+
+        if entity.entity_description.key == "climate_mkr1_pv_heizen_offset":
+            temp = float(option["temperature"])
+            await self.set_mkr1_pv_heizen_offset(temp)
+
+        if entity.entity_description.key == "climate_mkr1_pv_kuehlen_offset":
+            temp = float(option["temperature"])
+            await self.set_mkr1_pv_kuehlen_offset(temp)
+
+        if entity.entity_description.key == "climate_mkr2_pv_heizen_offset":
+            temp = float(option["temperature"])
+            await self.set_mkr2_pv_heizen_offset(temp)
+
+        if entity.entity_description.key == "climate_mkr2_pv_kuehlen_offset":
+            temp = float(option["temperature"])
+            await self.set_mkr2_pv_kuehlen_offset(temp)
+
+
+# --- hs/ategus: end
         if entity.entity_description.key == "climate_ww_bereitung":
             tmin = float(option["target_temp_low"])
             tmax = float(option["target_temp_high"])
             await self.set_ww_bereitung(tmin, tmax)
 
-#---------------------eingefügt-------------------------------------------------
-        if entity.entity_description.key == "climate_rl_soll":
-            temp = float(option["temperature"])
-            await self.set_rl_soll(temp)
-#---------------------eingefügt-------------------------------------------------
-
     async def set_betriebsart(self, betriebsart: str):
         betriebsart_nr = self.getbetriebsartnr(betriebsart)
         if betriebsart_nr is None:
             return
-        self._client.write_register(address=100, value=betriebsart_nr, slave=self._hostid)
+        self._client.write_register(address=100, value=betriebsart_nr, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
     async def set_raumtemperatur(self, temperature: float):
         if temperature is None:
             return
         temp_int = int(temperature * 10)
-        self._client.write_register(address=101, value=temp_int, slave=self._hostid)
+        self._client.write_register(address=101, value=temp_int, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
     async def set_rl_soll(self, temperature: float):
@@ -266,38 +315,129 @@ class HaHeliothermModbusHub:
             return
         temp_int = int(temperature * 10)
         temp_activate_rl_soll = 1
-        self._client.write_register(address=102, value=temp_int, slave=self._hostid)
-        self._client.write_register(address=103, value=temp_activate_rl_soll, slave=self._hostid)
+        self._client.write_register(address=102, value=temp_int, device_id=self._hostid)
+        self._client.write_register(address=103, value=temp_activate_rl_soll, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
     async def set_rltkuehlen(self, temperature: float):
         if temperature is None:
             return
         temp_int = int(temperature * 10)
-        self._client.write_register(address=104, value=temp_int, slave=self._hostid)
+        self._client.write_register(address=104, value=temp_int, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
+# --- hs/ategus: begin
+    async def set_mkr1_raumtemperatur(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=108, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr1_rl_soll(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        temp_activate_mkr1_rl_soll = 1
+        self._client.write_register(address=109, value=temp_int, device_id=self._hostid)
+        self._client.write_register(address=110, value=temp_activate_mkr1_rl_soll, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr1_rltkuehlen(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=111, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr2_raumtemperatur(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=113, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr2_rl_soll(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        temp_activate_mkr2_rl_soll = 1
+        self._client.write_register(address=114, value=temp_int, device_id=self._hostid)
+        self._client.write_register(address=115, value=temp_activate_mkr2_rl_soll, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr2_rltkuehlen(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=116, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_pv_heizen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=118, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_pv_kuehlen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=119, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr1_pv_heizen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=120, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr1_pv_kuehlen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=121, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr2_pv_heizen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=122, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+    async def set_mkr2_pv_kuehlen_offset(self, temperature: float):
+        if temperature is None:
+            return
+        temp_int = int(temperature * 10)
+        self._client.write_register(address=123, value=temp_int, device_id=self._hostid)
+        await self.async_refresh_modbus_data()
+
+
+# --- hs/ategus: end
     async def set_ww_bereitung(self, temp_min: float, temp_max: float):
         if temp_min is None or temp_max is None:
             return
         temp_max_int = int(temp_max * 10)
         temp_min_int = int(temp_min * 10)
-        self._client.write_register(address=105, value=temp_max_int, slave=self._hostid)
-        self._client.write_register(address=106, value=temp_min_int, slave=self._hostid)
+        self._client.write_register(address=105, value=temp_max_int, device_id=self._hostid)
+        self._client.write_register(address=106, value=temp_min_int, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
     async def set_mkr1_betriebsart(self, betriebsart: str):
         betriebsart_nr = self.getbetriebsartnr(betriebsart)
         if betriebsart_nr is None:
             return
-        self._client.write_register(address=107, value=betriebsart_nr, slave=self._hostid)
+        self._client.write_register(address=107, value=betriebsart_nr, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
     async def set_mkr2_betriebsart(self, betriebsart: str):
         betriebsart_nr = self.getbetriebsartnr(betriebsart)
         if betriebsart_nr is None:
             return
-        self._client.write_register(address=112, value=betriebsart_nr, slave=self._hostid)
+        self._client.write_register(address=112, value=betriebsart_nr, device_id=self._hostid)
         await self.async_refresh_modbus_data()
 
 #---------------------eingefügt-------------------------------------------------
@@ -305,9 +445,13 @@ class HaHeliothermModbusHub:
     def read_modbus_registers(self):
         """Read from modbus registers"""
         modbusdata = self.read_input_registers(address=10, count=32)
+# HS/ategus: zugefügt, Register 42 und 44 als UINT32, REgister 46-50 als INT16
+        modbusdata1a = self.read_input_registers(address=42, count=4)
+        modbusdata1b = self.read_input_registers(address=46, count=5)
+# HS/ategus: ende
         modbusdata2 = self.read_input_registers(address=60, count=16)
         modbusdata3 = self._client.read_holding_registers(
-            address=100, count=27, slave=self._hostid
+            address=100, count=27, device_id=self._hostid
         )
 
         # if modbusdata.isError():
@@ -417,7 +561,7 @@ class HaHeliothermModbusHub:
 #---------------------geändert-------------------------------------------------
         verdichteranforderung = modbusdata.registers[31]
         self.data["verdichteranforderung"] = (
-            "unbekannt"
+            "Kühlen"
             if (verdichteranforderung == 10)
             else "Heizen"
             if (verdichteranforderung == 20)
@@ -428,10 +572,39 @@ class HaHeliothermModbusHub:
             else "Keine"
         )
 #---------------------geändert-------------------------------------------------
+# HS/ategus: zugefügt
+
+        decoder = self._client.convert_from_registers(
+            modbusdata1a.registers,
+            data_type=self._client.DATATYPE.UINT32,
+        )
+
+        betriebsstunden_ww = decoder[0]
+        self.data["betriebsstunden_ww"] = betriebsstunden_ww
+        betriebsstunden_hzg = decoder[1]
+        self.data["betriebsstunden_hzg"] = betriebsstunden_hzg
+
+        mkr1_vorlauftemperatur = modbusdata1b.registers[0]
+        self.data["mkr1_vorlauftemperatur"] = self.checkval(mkr1_vorlauftemperatur, 0.1)
+
+        mkr2_vorlauftemperatur = modbusdata1b.registers[1]
+        self.data["mkr2_vorlauftemperatur"] = self.checkval(mkr2_vorlauftemperatur, 0.1)
+
+        mkr1_ruecklauftemperatur = modbusdata1b.registers[2]
+        self.data["mkr1_ruecklauftemperatur"] = self.checkval(mkr1_ruecklauftemperatur, 0.1)
+
+        mkr2_ruecklauftemperatur = modbusdata1b.registers[3]
+        self.data["mkr2_ruecklauftemperatur"] = self.checkval(mkr2_ruecklauftemperatur, 0.1)
+
+        raumfuehler1_temperatur = modbusdata1b.registers[4]
+        self.data["raumfuehler1_temperatur"] = self.checkval(raumfuehler1_temperatur, 0.1)
+
+# Ende zugefügt
+
 
         # -----------------------------------------------------------------------------------
         # decoder = BinaryPayloadDecoder.fromRegisters(
-        #    modbusdata2.registers, byteorder=Endian.BIG
+        #    modbusdata2.registers, byteorder=ENDIAN.BIG
         # )
         decoder = self._client.convert_from_registers(
             modbusdata2.registers,
@@ -467,19 +640,14 @@ class HaHeliothermModbusHub:
         select_betriebsart = modbusdata3.registers[0]
         self.data["select_betriebsart"] = self.getbetriebsart(select_betriebsart)
 
-        select_mkr1_betriebsart = modbusdata3.registers[7]
-        self.data["select_mkr1_betriebsart"] = self.getbetriebsart(
-            select_mkr1_betriebsart
-        )
-
-        select_mkr2_betriebsart = modbusdata3.registers[12]
-        self.data["select_mkr2_betriebsart"] = self.getbetriebsart(
-            select_mkr2_betriebsart
-        )
-
         climate_hkr_raum_soll = modbusdata3.registers[1]
         self.data["climate_hkr_raum_soll"] = {
             "temperature": self.checkval(climate_hkr_raum_soll, 0.1)
+        }
+
+        climate_rl_soll = modbusdata3.registers[2]
+        self.data["climate_rl_soll"] = {
+            "temperature": self.checkval(climate_rl_soll, 0.1)
         }
 
         climate_rlt_kuehlen = modbusdata3.registers[4]
@@ -495,11 +663,85 @@ class HaHeliothermModbusHub:
             "temperature": self.checkval(temp_brauchwasser, 0.1),
         }
 
-#---------------------eingefügt-------------------------------------------------
-        climate_rl_soll = modbusdata3.registers[2]
-        self.data["climate_rl_soll"] = {
-            "temperature": self.checkval(climate_rl_soll, 0.1)
+        select_mkr1_betriebsart = modbusdata3.registers[7]
+        self.data["select_mkr1_betriebsart"] = self.getbetriebsart(
+            select_mkr1_betriebsart
+        )
+
+# --- hs/ategus: begin
+        climate_mkr1_raum_soll = modbusdata3.registers[8]
+        self.data["climate_mkr1_raum_soll"] = {
+            "temperature": self.checkval(climate_mkr1_raum_soll, 0.1)
         }
+
+        climate_mkr1_rl_soll = modbusdata3.registers[9]
+        self.data["climate_mkr1_rl_soll"] = {
+            "temperature": self.checkval(climate_mkr1_rl_soll, 0.1)
+        }
+
+        climate_mkr1_rlt_kuehlen = modbusdata3.registers[11]
+        self.data["climate_mkr1_rlt_kuehlen"] = {
+            "temperature": self.checkval(climate_mkr1_rlt_kuehlen, 0.1)
+        }
+
+# --- hs/ategus: end
+        select_mkr2_betriebsart = modbusdata3.registers[12]
+        self.data["select_mkr2_betriebsart"] = self.getbetriebsart(
+            select_mkr2_betriebsart
+        )
+
+# --- hs/ategus: begin
+        climate_mkr2_raum_soll = modbusdata3.registers[13]
+        self.data["climate_mkr2_raum_soll"] = {
+            "temperature": self.checkval(climate_mkr2_raum_soll, 0.1)
+        }
+
+        climate_mkr2_rl_soll = modbusdata3.registers[14]
+        self.data["climate_mkr2_rl_soll"] = {
+            "temperature": self.checkval(climate_mkr2_rl_soll, 0.1)
+        }
+
+        climate_mkr1_rlt_kuehlen = modbusdata3.registers[16]
+        self.data["climate_mkr1_rlt_kuehlen"] = {
+            "temperature": self.checkval(climate_mkr1_rlt_kuehlen, 0.1)
+        }
+
+## Reg 117: PV Anforderung fehlt
+
+        climate_pv_heizen_offset = modbusdata3.registers[18]
+        self.data["climate_pv_heizen_offset"] = {
+            "temperature": self.checkval(climate_pv_heizen_offset, 0.1)
+        }
+
+        climate_pv_kuehlen_offset = modbusdata3.registers[19]
+        self.data["climate_pv_kuehlen_offset"] = {
+            "temperature": self.checkval(climate_pv_kuehlen_offset, 0.1)
+        }
+
+        climate_mkr1_pv_heizen_offset = modbusdata3.registers[20]
+        self.data["climate_mkr1_pv_heizen_offset"] = {
+            "temperature": self.checkval(climate_mkr1_pv_heizen_offset, 0.1)
+        }
+
+        climate_mkr1_pv_kuehlen_offset = modbusdata3.registers[21]
+        self.data["climate_mkr1_pv_kuehlen_offset"] = {
+            "temperature": self.checkval(climate_mkr1_pv_kuehlen_offset, 0.1)
+        }
+
+        climate_mkr2_pv_heizen_offset = modbusdata3.registers[22]
+        self.data["climate_mkr2_pv_heizen_offset"] = {
+            "temperature": self.checkval(climate_mkr2_pv_heizen_offset, 0.1)
+        }
+
+        climate_mkr2_pv_kuehlen_offset = modbusdata3.registers[23]
+        self.data["climate_mkr2_pv_kuehlen_offset"] = {
+            "temperature": self.checkval(climate_mkr2_pv_kuehlen_offset, 0.1)
+        }
+
+## Reg 124-152: fehlt
+
+# --- hs/ategus: end
+#---------------------eingefügt-------------------------------------------------
 #---------------------eingefügt-------------------------------------------------
 
         # externe_anforderung = modbusdata3.registers[20]

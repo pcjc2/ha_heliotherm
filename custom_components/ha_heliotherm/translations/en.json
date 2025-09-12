@@ -6,6 +6,7 @@
           "name": "Name",
           "host": "Host",
           "port": "Port",
+          "hostid": "Host ID",
           "scan_interval": "Scan interval"
         }
       }
@@ -18,6 +19,7 @@
         "data": {
           "host": "Host",
           "port": "Port",
+          "hostid": "Host ID",
           "scan_interval": "Scan interval"
         }
       }

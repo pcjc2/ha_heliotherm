@@ -110,9 +110,115 @@ CLIMATE_TYPES: dict[str, list[HaHeliothermClimateEntityDescription]] = {
         temperature_unit="°C",
         supported_features=ClimateEntityFeature.TARGET_TEMPERATURE
         #----hier keine Range, sondern fester Wert-------
-    )
+    ),
+#---------------------eingefügt-------------------------------------------------
+#-------------hs/ategus: begin
+    "climate_mkr1_raum_soll": HaHeliothermClimateEntityDescription(
+        name="MKR1 Solltemperatur",
+        key="climate_mkr1_raum_soll",
+        min_value=10,
+        max_value=25,
+        step=0.5,
+        temperature_unit="°C",
+    ),
+    "climate_mkr1_rl_soll": HaHeliothermClimateEntityDescription(
+        name="MKR1 Rücklaufsolltemperatur",
+        key="climate_mkr1_rl_soll",
+        min_value=5,
+        max_value=65,
+        step=0.5,
+        temperature_unit="°C",
+        supported_features=ClimateEntityFeature.TARGET_TEMPERATURE
+        #----hier keine Range, sondern fester Wert-------
+    ),
+    "climate_mkr1_rlt_kuehlen": HaHeliothermClimateEntityDescription(
+        name="Kühlen MKR1 RLT Soll",
+        key="climate_mkr1_rlt_kuehlen",
+        min_value=15,
+        max_value=25,
+        step=1,
+        temperature_unit="°C",
+    ),
+    "climate_mkr2_raum_soll": HaHeliothermClimateEntityDescription(
+        name="MKR2 Solltemperatur",
+        key="climate_mkr2_raum_soll",
+        min_value=10,
+        max_value=25,
+        step=0.5,
+        temperature_unit="°C",
+    ),
+    "climate_mkr2_rl_soll": HaHeliothermClimateEntityDescription(
+        name="MKR2 Rücklaufsolltemperatur",
+        key="climate_mkr2_rl_soll",
+        min_value=5,
+        max_value=65,
+        step=0.5,
+        temperature_unit="°C",
+        supported_features=ClimateEntityFeature.TARGET_TEMPERATURE
+        #----hier keine Range, sondern fester Wert-------
+    ),
+    "climate_mkr2_rlt_kuehlen": HaHeliothermClimateEntityDescription(
+        name="Kühlen MKR2 RLT Soll",
+        key="climate_mkr2_rlt_kuehlen",
+        min_value=15,
+        max_value=25,
+        step=1,
+        temperature_unit="°C",
+    ),
+    "climate_pv_heizen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Heizen Offset",
+        key="climate_pv_heizen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+    "climate_pv_kuehlen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Kühlen Offset",
+        key="climate_pv_kuehlen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+    "climate_mkr1_pv_heizen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Heizen Offset MKR1",
+        key="climate_mkr1_pv_heizen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+    "climate_mkr1_pv_kuehlen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Kühlen Offset MKR1",
+        key="climate_mkr1_pv_kuehlen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+
+    "climate_mkr2_pv_heizen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Heizen Offset MKR2",
+        key="climate_mkr2_pv_heizen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+    "climate_mkr2_pv_kuehlen_offset": HaHeliothermClimateEntityDescription(
+        name="PV Kühlen Offset MKR2",
+        key="climate_mkr2_pv_kuehlen_offset",
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        temperature_unit="K",
+    ),
+
+
 #---------------------eingefügt-------------------------------------------------
 
+#-------------hs/ategus: Ende
 }
 
 NUMBER_TYPES: dict[str, list[HaHeliothermNumberEntityDescription]] = {}
@@ -302,6 +408,53 @@ SENSOR_TYPES: dict[str, list[HaHeliothermSensorEntityDescription]] = {
         name="Anforderung",
         key="verdichteranforderung",
     ),
+# HS/ategus: zugefügt
+    "betriebsstunden_ww": HaHeliothermSensorEntityDescription(
+        name="Betriebsstunden Warmwasser",
+        key="betriebsstunden_ww",
+        native_unit_of_measurement="h",
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    "betriebsstunden_hzg": HaHeliothermSensorEntityDescription(
+        name="Betriebsstunden Heizung",
+        key="betriebsstunden_hzg",
+        native_unit_of_measurement="h",
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    "mkr1_vorlauftemperatur": HaHeliothermSensorEntityDescription(
+        name="MKR1 Vorlauf Temperatur",
+        key="mkr1_vorlauftemperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "mkr2_vorlauftemperatur": HaHeliothermSensorEntityDescription(
+        name="MKR2 Vorlauf Temperatur",
+        key="mkr2_vorlauftemperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "mkr1_ruecklauftemperatur": HaHeliothermSensorEntityDescription(
+        name="MKR1 Rücklauf Temperatur",
+        key="mkr1_ruecklauftemperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "mkr2_ruecklauftemperatur": HaHeliothermSensorEntityDescription(
+        name="MKR2 Rücklauf Temperatur",
+        key="mkr2_ruecklauftemperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "raumfuehler1_temperatur": HaHeliothermSensorEntityDescription(
+        name="Raumfühler 1 Temperatur",
+        key="raumfuehler1_temperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+
+# Ende zugefügt
     "wmz_heizung": HaHeliothermSensorEntityDescription(
         name="WMZ Heizung",
         key="wmz_heizung",
