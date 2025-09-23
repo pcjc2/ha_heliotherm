@@ -7,7 +7,7 @@
           "host": "Host",
           "port": "Port",
           "hostid": "Host ID",
-          "scan_interval": "Scan interval"
+          "scan_interval": "Abfrage-Intervall"
         }
       }
     }
@@ -15,12 +15,12 @@
   "options": {
     "step": {
       "init": {
-        "title": "Options",
+        "title": "Optionen",
         "data": {
           "host": "Host",
           "port": "Port",
           "hostid": "Host ID",
-          "scan_interval": "Scan interval"
+          "scan_interval": "Abfrage-Intervall"
         }
       }
     }

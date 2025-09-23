@@ -1,88 +1,38 @@
-from homeassistant.const import CONF_NAME
-from homeassistant.core import callback
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.input_number import *
+# custom_components/ha_heliotherm/sensor.py
+# neu
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
+from homeassistant.components.sensor import SensorEntity
 
-import homeassistant.util.dt as dt_util
-
-from .const import (
-    ATTR_MANUFACTURER,
-    DOMAIN,
-    SENSOR_TYPES,
-    HaHeliothermSensorEntityDescription,
-)
+from .entity_common import HubBackedEntity, setup_platform_from_types
+from .const import SENSOR_TYPES, HaHeliothermSensorEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
-    hub = hass.data[DOMAIN][hub_name]["hub"]
-
-    device_info = {
-        "identifiers": {(DOMAIN, hub_name)},
-        "name": hub_name,
-        "manufacturer": ATTR_MANUFACTURER,
-    }
-
-    entities = []
-    for sensor_description in SENSOR_TYPES.values():
-        sensor = HaHeliothermModbusSensor(
-            hub_name,
-            hub,
-            device_info,
-            sensor_description,
-        )
-        entities.append(sensor)
-
-    async_add_entities(entities)
-    return True
+    """Set up Heliotherm sensor entities from config entry."""
+    return await setup_platform_from_types(
+        hass=hass,
+        entry=entry,
+        async_add_entities=async_add_entities,
+        types_dict=SENSOR_TYPES,
+        entity_cls=HeliothermSensor,
+    )
 
 
-class HaHeliothermModbusSensor(SensorEntity):
-    """Representation of an Heliotherm Modbus sensor."""
+class HeliothermSensor(HubBackedEntity, SensorEntity):
+    """Heliotherm Modbus sensor entity."""
 
-    def __init__(
-        self,
-        platform_name,
-        hub,
-        device_info,
-        description: HaHeliothermSensorEntityDescription,
-    ):
-        """Initialize the sensor."""
-        self._platform_name = platform_name
-        self._attr_device_info = device_info
-        self._hub = hub
-        self.entity_description: HaHeliothermSensorEntityDescription = description
+    entity_description: HaHeliothermSensorEntityDescription
 
-    async def async_added_to_hass(self):
-        """Register callbacks."""
-        self._hub.async_add_haheliotherm_modbus_sensor(self._modbus_data_updated)
+    # def __init__ nicht erforderlich, verwendet __init__ aus HubBackedEntity, da keine eigenen Attribute zusätzlich angelegt werden müssen
 
-    async def async_will_remove_from_hass(self) -> None:
-        self._hub.async_remove_haheliotherm_modbus_sensor(self._modbus_data_updated)
+    def _apply_hub_payload(self, payload: Any) -> None:
+        """Map hub payload to native_value."""
+        self._attr_native_value = payload
 
-    @callback
-    def _modbus_data_updated(self):
-        self.async_write_ha_state()
-
-    @property
-    def name(self):
-        """Return the name."""
-        return f"{self._platform_name} {self.entity_description.name}"
-
-    @property
-    def unique_id(self) -> Optional[str]:
-        return f"{self._platform_name}_{self.entity_description.key}"
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return (
-            self._hub.data[self.entity_description.key]
-            if self.entity_description.key in self._hub.data
-            else None
-        )
+    # async def async_set_... entfällt, da r/o

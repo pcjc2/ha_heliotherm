@@ -1,100 +1,51 @@
-from homeassistant.const import CONF_NAME
-from homeassistant.core import callback
-from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
+# custom_components/ha_heliotherm/binary_sensor.py
+# neu
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
+from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.core import callback
 
-import homeassistant.util.dt as dt_util
-
-from .const import (
-    ATTR_MANUFACTURER,
-    DOMAIN,
-    SENSOR_TYPES,
-    BINARYSENSOR_TYPES,
-    HaHeliothermBinarySensorEntityDescription,
-)
+from .entity_common import HubBackedEntity, setup_platform_from_types
+from .const import BINARYSENSOR_TYPES, HaHeliothermBinarySensorEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
-    hub = hass.data[DOMAIN][hub_name]["hub"]
-
-    device_info = {
-        "identifiers": {(DOMAIN, hub_name)},
-        "name": hub_name,
-        "manufacturer": ATTR_MANUFACTURER,
-    }
-
-    entities = []
-    for sensor_description in BINARYSENSOR_TYPES.values():
-        sensor = HaHeliothermModbusBinarySensor(
-            hub_name,
-            hub,
-            device_info,
-            sensor_description,
-        )
-        entities.append(sensor)
-
-    async_add_entities(entities)
-    return True
+    """Set up Heliotherm binary sensor entities from config entry."""
+    return await setup_platform_from_types(
+        hass=hass,
+        entry=entry,
+        async_add_entities=async_add_entities,
+        types_dict=BINARYSENSOR_TYPES,
+        entity_cls=HeliothermBinarySensor,
+    )
 
 
-class HaHeliothermModbusBinarySensor(BinarySensorEntity):
-    """Representation of an IamMeter Modbus sensor."""
+class HeliothermBinarySensor(HubBackedEntity, BinarySensorEntity):
+    """Heliotherm binary sensor (read-only switch states)."""
 
-    def __init__(
-        self,
-        platform_name,
-        hub,
-        device_info,
-        description: HaHeliothermBinarySensorEntityDescription,
-    ):
-        """Initialize the sensor."""
-        self._platform_name = platform_name
-        self._attr_device_info = device_info
-        self._hub = hub
-        self.entity_description: HaHeliothermBinarySensorEntityDescription = description
+    entity_description: HaHeliothermBinarySensorEntityDescription
+    _attr_is_on: Optional[bool] = None
 
-    async def async_added_to_hass(self):
-        """Register callbacks."""
-        self._hub.async_add_haheliotherm_modbus_sensor(self._modbus_data_updated)
+    # def __init__ nicht erforderlich, verwendet __init__ aus HubBackedEntity, da keine eigenen Attribute zusätzlich angelegt werden müssen
 
-    async def async_will_remove_from_hass(self) -> None:
-        self._hub.async_remove_haheliotherm_modbus_sensor(self._modbus_data_updated)
+    def _apply_hub_payload(self, payload: Any) -> None:
+        """
+        Erwartete Payload aus Hub: "on" / "off" (Strings).
+        Alles ≠ "off" wird als eingeschaltet interpretiert.
+        """
+        if payload is None:
+            return
+        if isinstance(payload, str):
+            self._attr_is_on = (payload.lower() != "off")
+        else:
+            # Fallback: truthy -> on
+            self._attr_is_on = bool(payload)
 
-    @callback
-    def _modbus_data_updated(self):
-        self._update_state()
-        self.async_write_ha_state()
+    #async def async_set_... entfällt, da r/o
 
-    @callback
-    def _update_state(self):
-        if self.entity_description.key in self._hub.data:
-            self._attr_is_on = (
-                True if self._hub.data[self.entity_description.key] == "on" else False
-            )
 
-    @property
-    def name(self):
-        """Return the name."""
-        return f"{self._platform_name} {self.entity_description.name}"
-
-    @property
-    def unique_id(self) -> Optional[str]:
-        return f"{self._platform_name}_{self.entity_description.key}"
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return (
-            self._hub.data[self.entity_description.key]
-            if self.entity_description.key in self._hub.data
-            else None
-        )

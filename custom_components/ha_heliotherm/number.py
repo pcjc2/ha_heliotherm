@@ -1,103 +1,61 @@
-from homeassistant.core import callback
-from homeassistant.components.number import NumberEntity
-from homeassistant.components.input_number import (
-    InputNumber,
-    CONF_NAME,
-    CONF_MIN,
-    CONF_MAX,
-    CONF_INITIAL,
-    CONF_STEP,
-    CONF_UNIT_OF_MEASUREMENT,
-    CONF_MODE,
-)
+# custom_components/ha_heliotherm/number.py
+# neu
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
+from homeassistant.components.number import NumberEntity
 
-import homeassistant.util.dt as dt_util
-
-from .const import (
-    ATTR_MANUFACTURER,
-    DOMAIN,
-    NUMBER_TYPES,
-    HaHeliothermNumberEntityDescription,
-)
+from .entity_common import HubBackedEntity, setup_platform_from_types
+from .const import NUMBER_TYPES, HaHeliothermNumberEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
-    hub = hass.data[DOMAIN][hub_name]["hub"]
-
-    device_info = {
-        "identifiers": {(DOMAIN, hub_name)},
-        "name": hub_name,
-        "manufacturer": ATTR_MANUFACTURER,
-    }
-
-    entities = []
-    for sensor_description in NUMBER_TYPES.values():
-        sensor = HaHeliothermModbusNumber(
-            hub_name,
-            hub,
-            device_info,
-            sensor_description,
-        )
-        entities.append(sensor)
-
-    async_add_entities(entities)
-    return True
+    """Set up Heliotherm number entities from config entry."""
+    return await setup_platform_from_types(
+        hass=hass,
+        entry=entry,
+        async_add_entities=async_add_entities,
+        types_dict=NUMBER_TYPES,
+        entity_cls=HeliothermNumber,
+    )
 
 
-class HaHeliothermModbusNumber(NumberEntity):
-    """Representation of an Heliotherm Modbus number."""
+class HeliothermNumber(HubBackedEntity, NumberEntity):
+    """Heliotherm Modbus number entity (rw)."""
 
-    def __init__(
-        self,
-        platform_name,
-        hub,
-        device_info,
-        description: HaHeliothermNumberEntityDescription,
-    ):
-        """Initialize the sensor."""
-        self._platform_name = platform_name
-        self._attr_device_info = device_info
-        self._hub = hub
-        self.entity_description: HaHeliothermNumberEntityDescription = description
+    entity_description: HaHeliothermNumberEntityDescription
+
+    def __init__(self, platform_name, hub, device_info, description):
+        super().__init__(platform_name, hub, device_info, description)
+        # Mode (slider/box)
         self._attr_mode = description.mode
 
-    async def async_added_to_hass(self):
-        """Register callbacks."""
-        self._hub.async_add_haheliotherm_modbus_sensor(self._modbus_data_updated)
-
-    async def async_will_remove_from_hass(self) -> None:
-        self._hub.async_remove_haheliotherm_modbus_sensor(self._modbus_data_updated)
-
-    @callback
-    def _modbus_data_updated(self):
-        self.async_write_ha_state()
-
-    @property
-    def name(self):
-        """Return the name."""
-        return f"{self._platform_name} {self.entity_description.name}"
-
-    @property
-    def unique_id(self) -> Optional[str]:
-        return f"{self._platform_name}_{self.entity_description.key}"
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return (
-            self._hub.data[self.entity_description.key]
-            if self.entity_description.key in self._hub.data
-            else None
-        )
-
-    def set_native_value(self, value: float) -> None:
-        self._attr_value = value
+    def _apply_hub_payload(self, payload: Any) -> None:
+        """Map hub payload to native_value."""
+        self._attr_native_value = payload
 
     async def async_set_native_value(self, value: float) -> None:
-        self._attr_value = value
+        """Write new value via hub."""
+        self._attr_native_value = value
+        # Einheitliches Schreiben wie bei select/climate:
+        await self._hub.setter_function_callback(self, value)
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        return getattr(self.entity_description, "unit_of_measurement", None)
+
+    @property
+    def native_min_value(self) -> float | None:
+        return getattr(self.entity_description, "min_value", None)
+
+    @property
+    def native_max_value(self) -> float | None:
+        return getattr(self.entity_description, "max_value", None)
+
+    @property
+    def native_step(self) -> float | None:
+        return getattr(self.entity_description, "step", None)

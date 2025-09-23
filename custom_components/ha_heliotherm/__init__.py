@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import asyncio
+import struct
 from datetime import timedelta
-import logging
 import threading
-from typing import Optional
+from typing import Any, Dict, Iterable, Tuple, Optional
+
 
 from pymodbus.client import ModbusTcpClient
-#from pymodbus.payload import Endian
+
+# from pymodbus.payload import Endian
 from pymodbus.exceptions import ConnectionException
-#from pymodbus.payload import BinaryPayloadDecoder
+
+# from pymodbus.payload import BinaryPayloadDecoder
 import voluptuous as vol
 
 from homeassistant.helpers.entity import Entity
@@ -21,40 +24,80 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
-    CONF_DEVICE,
+    # CONF_DEVICE,
     Platform,
 )
 from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
+from . import const
+from .const import (
+    DEFAULT_NAME,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    CONF_HOSTID,
+    ENTITIES_DICT,
+    BINARYSENSOR_TYPES,
+    SENSOR_TYPES,
+    SELECT_TYPES,
+    CLIMATE_TYPES,
+    NUMBER_TYPES,
+    BINARY_TYPES,
+    get_entity_switch,
+    get_entity_type,
+    get_entity_select,
+    get_entity_factor,
+    get_entity_max,
+    get_entity_min,
+    get_entity_reg,
+    get_entity_props,
+    get_entity_ha,
+    is_entity_readonly,
+    is_entity_switch,
+    is_entity_select,
+    is_entity_climate,
+    C_MIN_INPUT_REGISTER,
+    C_MAX_INPUT_REGISTER,
+    C_MIN_HOLDING_REGISTER,
+    C_MAX_HOLDING_REGISTER,
+    C_MIN_COILS,
+    C_MAX_COILS,
+    C_MIN_DISCRETE_INPUTS,
+    C_MAX_DISCRETE_INPUTS,
+)
 
-from .const import DEFAULT_NAME, DEFAULT_SCAN_INTERVAL, DOMAIN, CONF_HOSTID
 
+import logging
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.INFO)
+_LOGGER.info("ha_heliotherm loaded")
 
-# PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.SELECT]
-PLATFORMS = [Platform.SELECT, Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CLIMATE]
-
-
-async def async_setup(hass, config):
-    """Set up the HaHeliotherm modbus component."""
-    hass.data[DOMAIN] = {}
-    return True
+PLATFORMS = [
+    Platform.BINARY_SENSOR,  # BINARYSENSOR_TYPES (r/o)
+    Platform.SENSOR,  # SENSOR_TYPES (r/o)
+    Platform.SELECT,  # SELECT_TYPES (r/w)
+    Platform.SWITCH,  # BINARY_TYPES (r/w)
+    Platform.CLIMATE,  # CLIMATE_TYPES (r/w)
+    Platform.NUMBER,  # NUMBER_TYPES (r/w)
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up a HaHeliotherm modbus."""
-    _LOGGER.debug(entry)
-    host = entry.data[CONF_HOST]
-    name = entry.data[CONF_NAME]
-    port = entry.data[CONF_PORT]
-    hostid = entry.data[CONF_HOSTID]
-	
-    scan_interval = DEFAULT_SCAN_INTERVAL
+    _LOGGER.info(entry)
+    hass.data.setdefault(DOMAIN, {})
 
-    _LOGGER.debug("Setup %s.%s", DOMAIN, name)
+    host = entry.data.get(CONF_HOST)
+    name = entry.data.get(CONF_NAME)
+    port = entry.data.get(CONF_PORT)
+    scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    if scan_interval < 5:
+        scan_interval = DEFAULT_SCAN_INTERVAL
+    hostid = entry.data.get(CONF_HOSTID)
+
+    _LOGGER.info("Setup %s.%s", DOMAIN, name)
 
     hub = HaHeliothermModbusHub(hass, name, host, port, scan_interval, hostid)
     # """Register the hub."""
@@ -103,7 +146,7 @@ class HaHeliothermModbusHub:
         self._hostid = hostid
         self._unsub_interval_method = None
         self._sensors = []
-        self.data = {}
+        self.data: Dict[str, Any] = {}
 
     @callback
     def async_add_haheliotherm_modbus_sensor(self, update_callback):
@@ -154,596 +197,364 @@ class HaHeliothermModbusHub:
         with self._lock:
             self._client.connect()
 
-    def read_input_registers(self, address, count):
-        """Read holding registers."""
-        with self._lock:
-            return self._client.read_input_registers(address, count=count, device_id=self._hostid)
+    # ---- Helper ----------------------------------------------------------
 
-    def getsignednumber(self, number, bitlength=16):
-        mask = (2**bitlength) - 1
-        if number & (1 << (bitlength - 1)):
-            return number | ~mask
+    # ---- Switches ----------------------------------------------------------
+    def _encode_switch(self, v: Any) -> int:
+        if isinstance(v, str):
+            v = v.strip().lower()
+            return 0 if v in {"off", "aus", "false", "0", "nein", "no"} else 1
         else:
-            return number & mask
+            return 1 if bool(v) else 0
 
-    def checkval(self, value, scale, bitlength=16):
-        """Check value for missing item"""
-        if value is None:
+    def _decode_switch(self, props: Dict[str, Any], raw: int) -> str:
+        """
+        SWITCH-Mapping -> 'off'/'on'.
+        Erlaubt {"off": 0}  oder {"off": 0, "on": 1}.
+        """
+        m: Dict[str, int] = get_entity_switch(props) or {}
+        off_v = m.get("off", 0)
+        return "off" if raw == off_v else "on"
+
+    # ---- Numerische Werte ----------------------------------------------------------
+    def _encode_numeric(
+        self, value: float, faktor: float, min_v: float | None, max_v: float | None
+    ) -> int:
+        """
+        Skaliert den Wert mit FAKTOR und gibt eine ganzzahlige Registerdarstellung zurück.
+        Begrenzung erfolgt auf MIN und MAX (ebenfalls skaliert).
+        """
+        if min_v is not None and value < min_v:
+            raise ValueError("VALUE darf nicht < MIN sein.")
+        if max_v is not None and value > max_v:
+            raise ValueError("VALUE darf nicht > MAX sein.")
+        if faktor == 0:
+            raise ValueError("FAKTOR darf nicht 0 sein.")
+
+        return round(value / faktor)
+
+    def _decode_numeric(self, props: Dict[str, Any], raw: int) -> float:
+        """Rohwert -> physikalischer Wert mittels FAKTOR (raw * faktor)."""
+        # Sentinel für 'ungültig': -500
+        if raw == -500:
             return None
-        value = self.getsignednumber(value, bitlength)
-        value = round(value * scale, 1)
-        if value == -50.0:
-            value = None
-        return value
+        faktor = get_entity_factor(props) or 1.0
+        value = raw * faktor
+        return float(value)
 
-    def getbetriebsart(self, bietriebsart_nr: int):
-        return (
-            "Aus"
-            if bietriebsart_nr == 0
-            else "Auto"
-            if bietriebsart_nr == 1
-            else "Kühlen"
-            if bietriebsart_nr == 2
-            else "Sommer"
-            if bietriebsart_nr == 3
-            else "Dauerbetrieb"
-            if bietriebsart_nr == 4
-            else "Absenken"
-            if bietriebsart_nr == 5
-            else "Urlaub"
-            if bietriebsart_nr == 6
-            else "Party"
-            if bietriebsart_nr == 7
-            else None
-        )
+    def _decode_climate(self, props: Dict[str, Any], raw: int) -> dict:
+        value = self._decode_numeric(props, raw)
+        min_value = get_entity_min(props)
+        max_value = get_entity_max(props)
 
-    def getbetriebsartnr(self, bietriebsart_str: str):
-        return (
-            0
-            if bietriebsart_str == "Aus"
-            else 1
-            if bietriebsart_str == "Auto"
-            else 2
-            if bietriebsart_str == "Kühlen"
-            else 3
-            if bietriebsart_str == "Sommer"
-            else 4
-            if bietriebsart_str == "Dauerbetrieb"
-            else 5
-            if bietriebsart_str == "Absenken"
-            else 6
-            if bietriebsart_str == "Urlaub"
-            else 7
-            if bietriebsart_str == "Party"
-            else None
-        )
+        return {
+            "temperature": value,
+            "target_temp_low": min_value,
+            "target_temp_high": max_value,
+        }
+
+    # ---- Select Werte ----------------------------------------------------------
+    def _encode_select(self, props: Dict[str, Any], value: Any) -> int:
+        """Ermittle den zu schreibenden Integer aus VALUES-Mapping (Label oder Index erlaubt)."""
+        values = props["VALUES"]
+        # label -> index
+        if isinstance(value, str):
+            inv = {str(v): k for k, v in values.items() if k != "default"}
+            if value in inv:
+                return int(inv[value])
+            # tolerant gegen unterschiedliche Groß-/Kleinschreibung
+            for k, v in inv.items():
+                if k.lower() == value.lower():
+                    return int(v)
+            raise ValueError(
+                f"Unbekannte Option '{value}'. Zulässig: {list(inv.keys())}"
+            )
+        # index (int) direkt
+        try:
+            iv = int(value)
+        except Exception as e:
+            raise ValueError(f"Ungültiger Select-Wert: {value!r}") from e
+        if iv not in {k for k in values.keys() if isinstance(k, int)}:
+            raise ValueError(
+                f"Index {iv} nicht in VALUES: {sorted(k for k in values.keys() if isinstance(k, int))}"
+            )
+        return iv
+
+    def _decode_select(self, props: Dict[str, Any], raw: int) -> str | None:
+        """
+        Invertiere VALUES (Index->Text) zu Text
+        Unbekannte Indizes -> None.
+        """
+        values: Dict[Any, Any] = get_entity_select(props) or {}
+        return values.get(raw, f"Ungültiger Wert: {raw}")
+
+    # ***************************************** SCHREIBEN **************************************************************
+
+    async def write_entity_value(self, entity_key: str, value: Any) -> None:
+        """
+        Generisches Schreiben für alle beschreibbaren Entitäten.
+        - SWITCH: akzeptiert bool / 'on'/'off'/0/1
+        - SELECT (VALUES): akzeptiert Label (String) oder Index (int)
+        - NUMBER/CLIMATE: beachtet FAKTOR, MIN/MAX
+        - UINT32: wird Big-Endian in zwei Registern geschrieben (REG, REG+1)
+        - HA (Hand-Aktiv): falls vorhanden und activate_hand=True -> 1 schreiben
+        """
+
+        _LOGGER.info(f"Schreibe Entität {entity_key} -> {value}")
+        print(f"write_entity_value: {entity_key} -> {value}")
+
+        # Props finden
+        props = get_entity_props(entity_key)
+        if not props:
+            raise ValueError(
+                f"Ungültige Entität {entity_key}. Definition in ENTITIES_DICT nicht gefunden."
+            )
+        if is_entity_readonly(props):
+            raise PermissionError(f"Register {entity_key} ist read-only.")
+
+        reg, dt = get_entity_reg(props)
+        if reg is None or dt is None:
+            raise ValueError(f"Fehlende Registerdefinition für {entity_key}.")
+
+        # 1) Wert in Roh-Registerwert(e) umwandeln
+        reg_words: Tuple[int, ...] | list[int]
+
+        if is_entity_switch(props):
+            raw = self._encode_switch(value)
+        elif is_entity_select(props):
+            raw = self._encode_select(props, value)
+        elif is_entity_climate(props):
+            raw = self._encode_numeric(
+                float(value["temperature"]),
+                get_entity_factor(props),
+                get_entity_min(props),
+                get_entity_max(props),
+            )
+        else:
+            # numerisch
+            raw = self._encode_numeric(
+                float(value),
+                get_entity_factor(props),
+                get_entity_min(props),
+                get_entity_max(props),
+            )
+
+        if dt == ModbusTcpClient.DATATYPE.BITS:
+            reg_words = (bool(raw),)
+        else:
+            reg_words = self._client.convert_to_registers(value=raw, data_type=dt)
+
+        # 2) Schreiben
+        await self._write_modbus_registers(reg, reg_words, dt)
+
+        # 3) Hand-Aktiv setzen
+        entity_ha = get_entity_ha(props)
+        if entity_ha:
+            props_ha = get_entity_props(entity_ha)
+            reg_ha, dt_ha = get_entity_reg(props_ha)
+            value_ha = 1
+            _LOGGER.info(f"Schreibe Hand-Aktiv in {entity_ha} -> {value_ha}")
+            if reg_ha and (dt_ha == ModbusTcpClient.DATATYPE.UINT16):
+                await self._client.write_register(address=reg_ha, value=value_ha, device_id=self._hostid)
+            else:
+                raise ValueError(f"Fehlende/fehlerhafte Registerdefinition für {entity_ha}.")
+        # 4) Daten neu lesen
+        _LOGGER.info("Schreibvorgang abgeschlossen. Löse Refresh-Zyklus aus.")
+        await self.async_refresh_modbus_data()
 
     async def setter_function_callback(self, entity: Entity, option):
-        if entity.entity_description.key == "select_betriebsart":
-            await self.set_betriebsart(option)
-            return
-        if entity.entity_description.key == "select_mkr1_betriebsart":
-            await self.set_mkr1_betriebsart(option)
-            return
-        if entity.entity_description.key == "select_mkr2_betriebsart":
-            await self.set_mkr2_betriebsart(option)
-            return
-        if entity.entity_description.key == "climate_hkr_raum_soll":
-            temp = float(option["temperature"])
-            await self.set_raumtemperatur(temp)
+        await self.write_entity_value(entity.entity_description.key, option)
 
-        if entity.entity_description.key == "climate_rl_soll":
-            temp = float(option["temperature"])
-            await self.set_rl_soll(temp)
+    # ***************************************** LESEN **************************************************************
 
-        if entity.entity_description.key == "climate_rlt_kuehlen":
-            temp = float(option["temperature"])
-            await self.set_rltkuehlen(temp)
-
-# --- hs/ategus: begin
-        if entity.entity_description.key == "climate_mkr1_raum_soll":
-            temp = float(option["temperature"])
-            await self.set_mkr1_raumtemperatur(temp)
-
-        if entity.entity_description.key == "climate_mkr1_rl_soll":
-            temp = float(option["temperature"])
-            await self.set_mkr1_rl_soll(temp)
-
-        if entity.entity_description.key == "climate_mkr1_rlt_kuehlen":
-            temp = float(option["temperature"])
-            await self.set_mkr1_rltkuehlen(temp)
-
-        if entity.entity_description.key == "climate_mkr2_raum_soll":
-            temp = float(option["temperature"])
-            await self.set_mkr2_raumtemperatur(temp)
-
-        if entity.entity_description.key == "climate_mkr2_rl_soll":
-            temp = float(option["temperature"])
-            await self.set_mkr2_rl_soll(temp)
-
-        if entity.entity_description.key == "climate_mkr2_rlt_kuehlen":
-            temp = float(option["temperature"])
-            await self.set_mkr2_rltkuehlen(temp)
-
-        if entity.entity_description.key == "climate_pv_heizen_offset":
-            temp = float(option["temperature"])
-            await self.set_pv_heizen_offset(temp)
-
-        if entity.entity_description.key == "climate_pv_kuehlen_offset":
-            temp = float(option["temperature"])
-            await self.set_pv_kuehlen_offset(temp)
-
-        if entity.entity_description.key == "climate_mkr1_pv_heizen_offset":
-            temp = float(option["temperature"])
-            await self.set_mkr1_pv_heizen_offset(temp)
-
-        if entity.entity_description.key == "climate_mkr1_pv_kuehlen_offset":
-            temp = float(option["temperature"])
-            await self.set_mkr1_pv_kuehlen_offset(temp)
-
-        if entity.entity_description.key == "climate_mkr2_pv_heizen_offset":
-            temp = float(option["temperature"])
-            await self.set_mkr2_pv_heizen_offset(temp)
-
-        if entity.entity_description.key == "climate_mkr2_pv_kuehlen_offset":
-            temp = float(option["temperature"])
-            await self.set_mkr2_pv_kuehlen_offset(temp)
-
-
-# --- hs/ategus: end
-        if entity.entity_description.key == "climate_ww_bereitung":
-            tmin = float(option["target_temp_low"])
-            tmax = float(option["target_temp_high"])
-            await self.set_ww_bereitung(tmin, tmax)
-
-    async def set_betriebsart(self, betriebsart: str):
-        betriebsart_nr = self.getbetriebsartnr(betriebsart)
-        if betriebsart_nr is None:
-            return
-        self._client.write_register(address=100, value=betriebsart_nr, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_raumtemperatur(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=101, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_rl_soll(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        temp_activate_rl_soll = 1
-        self._client.write_register(address=102, value=temp_int, device_id=self._hostid)
-        self._client.write_register(address=103, value=temp_activate_rl_soll, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_rltkuehlen(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=104, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-# --- hs/ategus: begin
-    async def set_mkr1_raumtemperatur(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=108, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr1_rl_soll(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        temp_activate_mkr1_rl_soll = 1
-        self._client.write_register(address=109, value=temp_int, device_id=self._hostid)
-        self._client.write_register(address=110, value=temp_activate_mkr1_rl_soll, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr1_rltkuehlen(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=111, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_raumtemperatur(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=113, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_rl_soll(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        temp_activate_mkr2_rl_soll = 1
-        self._client.write_register(address=114, value=temp_int, device_id=self._hostid)
-        self._client.write_register(address=115, value=temp_activate_mkr2_rl_soll, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_rltkuehlen(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=116, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_pv_heizen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=118, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_pv_kuehlen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=119, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr1_pv_heizen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=120, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr1_pv_kuehlen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=121, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_pv_heizen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=122, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_pv_kuehlen_offset(self, temperature: float):
-        if temperature is None:
-            return
-        temp_int = int(temperature * 10)
-        self._client.write_register(address=123, value=temp_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-
-# --- hs/ategus: end
-    async def set_ww_bereitung(self, temp_min: float, temp_max: float):
-        if temp_min is None or temp_max is None:
-            return
-        temp_max_int = int(temp_max * 10)
-        temp_min_int = int(temp_min * 10)
-        self._client.write_register(address=105, value=temp_max_int, device_id=self._hostid)
-        self._client.write_register(address=106, value=temp_min_int, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr1_betriebsart(self, betriebsart: str):
-        betriebsart_nr = self.getbetriebsartnr(betriebsart)
-        if betriebsart_nr is None:
-            return
-        self._client.write_register(address=107, value=betriebsart_nr, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-    async def set_mkr2_betriebsart(self, betriebsart: str):
-        betriebsart_nr = self.getbetriebsartnr(betriebsart)
-        if betriebsart_nr is None:
-            return
-        self._client.write_register(address=112, value=betriebsart_nr, device_id=self._hostid)
-        await self.async_refresh_modbus_data()
-
-#---------------------eingefügt-------------------------------------------------
+    def read_entity_value(
+        self, buf: list[int | bool], idx: int, dt: ModbusTcpClient.DATATYPE
+    ):
+        if buf:
+            if dt == ModbusTcpClient.DATATYPE.BITS:
+                dtlen = 1
+            else:
+                dtlen = dt.value[1]
+            buflen = len(buf)
+            out_of_bounds = (idx < 0) or (idx + dtlen > buflen)
+            if out_of_bounds:
+                raise ValueError(
+                    "Puffer hat nur {buflen} Elemente und ist damit zu klein zum Lesen von {dtlen} Elementen ab Index {idx}!!"
+                )
+            else:
+                if dt == ModbusTcpClient.DATATYPE.BITS:
+                    return buf[idx]
+                else:
+                    return self._client.convert_from_registers(
+                        registers=buf[idx : idx + dtlen], data_type=dt
+                    )
+        else:
+            raise ValueError(
+                "Puffer hat keine Elemente. Fehler in Definition const.ENTITIES_DICT!!"
+            )
 
     def read_modbus_registers(self):
         """Read from modbus registers"""
-        modbusdata = self.read_input_registers(address=10, count=32)
-# HS/ategus: zugefügt, Register 42 und 44 als UINT32, REgister 46-50 als INT16
-        modbusdata1a = self.read_input_registers(address=42, count=4)
-        modbusdata1b = self.read_input_registers(address=46, count=5)
-# HS/ategus: ende
-        modbusdata2 = self.read_input_registers(address=60, count=16)
-        modbusdata3 = self._client.read_holding_registers(
-            address=100, count=27, device_id=self._hostid
-        )
 
-        # if modbusdata.isError():
-        #    return False
-
-        temp_aussen = modbusdata.registers[0]
-        self.data["temp_aussen"] = self.checkval(temp_aussen, 0.1)
-
-        temp_brauchwasser = modbusdata.registers[1]
-        self.data["temp_brauchwasser"] = self.checkval(temp_brauchwasser, 0.1)
-
-        temp_vorlauf = modbusdata.registers[2]
-        self.data["temp_vorlauf"] = self.checkval(temp_vorlauf, 0.1)
-
-        temp_ruecklauf = modbusdata.registers[3]
-        self.data["temp_ruecklauf"] = self.checkval(temp_ruecklauf, 0.1)
-
-        temp_pufferspeicher = modbusdata.registers[4]
-        self.data["temp_pufferspeicher"] = self.checkval(temp_pufferspeicher, 0.1)
-
-        temp_eq_eintritt = modbusdata.registers[5]
-        self.data["temp_eq_eintritt"] = self.checkval(temp_eq_eintritt, 0.1)
-
-        temp_eq_austritt = modbusdata.registers[6]
-        self.data["temp_eq_austritt"] = self.checkval(temp_eq_austritt, 0.1)
-
-        temp_sauggas = modbusdata.registers[7]
-        self.data["temp_sauggas"] = self.checkval(temp_sauggas, 0.1)
-
-        temp_verdampfung = modbusdata.registers[8]
-        self.data["temp_verdampfung"] = self.checkval(temp_verdampfung, 0.1)
-
-        temp_kodensation = modbusdata.registers[9]
-        self.data["temp_kodensation"] = self.checkval(temp_kodensation, 0.1)
-
-        temp_heissgas = modbusdata.registers[10]
-        self.data["temp_heissgas"] = self.checkval(temp_heissgas, 0.1)
-
-        bar_niederdruck = modbusdata.registers[11]
-        self.data["bar_niederdruck"] = self.checkval(bar_niederdruck, 0.1)
-
-        bar_hochdruck = modbusdata.registers[12]
-        self.data["bar_hochdruck"] = self.checkval(bar_hochdruck, 0.1)
-
-        on_off_heizkreispumpe = modbusdata.registers[13]
-        self.data["on_off_heizkreispumpe"] = (
-            "off" if (on_off_heizkreispumpe == 0) else "on"
-        )
-
-        on_off_pufferladepumpe = modbusdata.registers[14]
-        self.data["on_off_pufferladepumpe"] = (
-            "off" if (on_off_pufferladepumpe == 0) else "on"
-        )
-
-        on_off_verdichter = modbusdata.registers[15]
-        self.data["on_off_verdichter"] = "off" if (on_off_verdichter == 0) else "on"
-
-        on_off_stoerung = modbusdata.registers[16]
-        self.data["on_off_stoerung"] = "off" if (on_off_stoerung == 0) else "on"
-
-        vierwegeventil_luft = modbusdata.registers[17]
-        self.data["vierwegeventil_luft"] = (
-            "Abtaubetrieb" if (vierwegeventil_luft != 0) else "Aus"
-        )
-
-        wmz_durchfluss = modbusdata.registers[18]
-        self.data["wmz_durchfluss"] = self.checkval(wmz_durchfluss, 0.1)
-
-        n_soll_verdichter = modbusdata.registers[19]
-        self.data["n_soll_verdichter"] = self.checkval(n_soll_verdichter, 1)
-
-        cop = modbusdata.registers[20]
-        self.data["cop"] = self.checkval(cop, 0.1)
-
-        temp_frischwasser = modbusdata.registers[21]
-        self.data["temp_frischwasser"] = self.checkval(temp_frischwasser, 0.1)
-
-        on_off_evu_sperre = modbusdata.registers[22]
-        self.data["on_off_evu_sperre"] = "on" if (on_off_evu_sperre == 0) else "off"
-
-        temp_aussen_verzoegert = modbusdata.registers[23]
-        self.data["temp_aussen_verzoegert"] = self.checkval(temp_aussen_verzoegert, 0.1)
-
-        hkr_solltemperatur = modbusdata.registers[24]
-        self.data["hkr_solltemperatur"] = self.checkval(hkr_solltemperatur, 0.1)
-
-        mkr1_solltemperatur = modbusdata.registers[25]
-        self.data["mkr1_solltemperatur"] = self.checkval(mkr1_solltemperatur, 0.1)
-
-        mkr2_solltemperatur = modbusdata.registers[26]
-        self.data["mkr2_solltemperatur"] = self.checkval(mkr2_solltemperatur, 0.1)
-
-        on_off_eq_ventilator = modbusdata.registers[27]
-        self.data["on_off_eq_ventilator"] = (
-            "off" if (on_off_eq_ventilator == 0) else "on"
-        )
-
-        ww_vorrang = modbusdata.registers[28]
-        self.data["ww_vorrang"] = "off" if (ww_vorrang == 0) else "on"
-
-        kuehlen_umv_passiv = modbusdata.registers[29]
-        self.data["kuehlen_umv_passiv"] = "off" if (kuehlen_umv_passiv == 0) else "on"
-
-        expansionsventil = modbusdata.registers[30]
-        self.data["expansionsventil"] = self.checkval(expansionsventil, 0.1)
-
-#---------------------geändert-------------------------------------------------
-        verdichteranforderung = modbusdata.registers[31]
-        self.data["verdichteranforderung"] = (
-            "Kühlen"
-            if (verdichteranforderung == 10)
-            else "Heizen"
-            if (verdichteranforderung == 20)
-            else "Warmwasser"
-            if (verdichteranforderung == 30)
-            else "Externe Anforderung"
-            if (verdichteranforderung == 40)
-            else "Keine"
-        )
-#---------------------geändert-------------------------------------------------
-# HS/ategus: zugefügt
-
-        decoder = self._client.convert_from_registers(
-            modbusdata1a.registers,
-            data_type=self._client.DATATYPE.UINT32,
-        )
-
-        betriebsstunden_ww = decoder[0]
-        self.data["betriebsstunden_ww"] = betriebsstunden_ww
-        betriebsstunden_hzg = decoder[1]
-        self.data["betriebsstunden_hzg"] = betriebsstunden_hzg
-
-        mkr1_vorlauftemperatur = modbusdata1b.registers[0]
-        self.data["mkr1_vorlauftemperatur"] = self.checkval(mkr1_vorlauftemperatur, 0.1)
-
-        mkr2_vorlauftemperatur = modbusdata1b.registers[1]
-        self.data["mkr2_vorlauftemperatur"] = self.checkval(mkr2_vorlauftemperatur, 0.1)
-
-        mkr1_ruecklauftemperatur = modbusdata1b.registers[2]
-        self.data["mkr1_ruecklauftemperatur"] = self.checkval(mkr1_ruecklauftemperatur, 0.1)
-
-        mkr2_ruecklauftemperatur = modbusdata1b.registers[3]
-        self.data["mkr2_ruecklauftemperatur"] = self.checkval(mkr2_ruecklauftemperatur, 0.1)
-
-        raumfuehler1_temperatur = modbusdata1b.registers[4]
-        self.data["raumfuehler1_temperatur"] = self.checkval(raumfuehler1_temperatur, 0.1)
-
-# Ende zugefügt
-
-
-        # -----------------------------------------------------------------------------------
-        # decoder = BinaryPayloadDecoder.fromRegisters(
-        #    modbusdata2.registers, byteorder=ENDIAN.BIG
-        # )
-        decoder = self._client.convert_from_registers(
-            modbusdata2.registers,
-            data_type=self._client.DATATYPE.UINT32,
-        )
-
-        wmz_heizung = decoder[0]
-        self.data["wmz_heizung"] = wmz_heizung
-
-        stromz_heizung = decoder[1]
-        self.data["stromz_heizung"] = stromz_heizung
-
-        wmz_brauchwasser = decoder[2]
-        self.data["wmz_brauchwasser"] = wmz_brauchwasser
-
-        stromz_brauchwasser = decoder[3]
-        self.data["stromz_brauchwasser"] = stromz_brauchwasser
-
-        stromz_gesamt = decoder[4]
-        self.data["stromz_gesamt"] = stromz_gesamt
-
-        stromz_leistung = decoder[5]
-        self.data["stromz_leistung"] = stromz_leistung
-
-        wmz_gesamt = decoder[6]
-        self.data["wmz_gesamt"] = wmz_gesamt
-
-        wmz_leistung = decoder[7] * 0.1
-        self.data["wmz_leistung"] = wmz_leistung
-
-        # -----------------------------------------------------------------------------------
-
-        select_betriebsart = modbusdata3.registers[0]
-        self.data["select_betriebsart"] = self.getbetriebsart(select_betriebsart)
-
-        climate_hkr_raum_soll = modbusdata3.registers[1]
-        self.data["climate_hkr_raum_soll"] = {
-            "temperature": self.checkval(climate_hkr_raum_soll, 0.1)
-        }
-
-        climate_rl_soll = modbusdata3.registers[2]
-        self.data["climate_rl_soll"] = {
-            "temperature": self.checkval(climate_rl_soll, 0.1)
-        }
-
-        climate_rlt_kuehlen = modbusdata3.registers[4]
-        self.data["climate_rlt_kuehlen"] = {
-            "temperature": self.checkval(climate_rlt_kuehlen, 0.1)
-        }
-
-        climate_ww_bereitung_max = modbusdata3.registers[5]
-        climate_ww_bereitung_min = modbusdata3.registers[6]
-        self.data["climate_ww_bereitung"] = {
-            "target_temp_low": self.checkval(climate_ww_bereitung_min, 0.1),
-            "target_temp_high": self.checkval(climate_ww_bereitung_max, 0.1),
-            "temperature": self.checkval(temp_brauchwasser, 0.1),
-        }
-
-        select_mkr1_betriebsart = modbusdata3.registers[7]
-        self.data["select_mkr1_betriebsart"] = self.getbetriebsart(
-            select_mkr1_betriebsart
-        )
-
-# --- hs/ategus: begin
-        climate_mkr1_raum_soll = modbusdata3.registers[8]
-        self.data["climate_mkr1_raum_soll"] = {
-            "temperature": self.checkval(climate_mkr1_raum_soll, 0.1)
-        }
-
-        climate_mkr1_rl_soll = modbusdata3.registers[9]
-        self.data["climate_mkr1_rl_soll"] = {
-            "temperature": self.checkval(climate_mkr1_rl_soll, 0.1)
-        }
-
-        climate_mkr1_rlt_kuehlen = modbusdata3.registers[11]
-        self.data["climate_mkr1_rlt_kuehlen"] = {
-            "temperature": self.checkval(climate_mkr1_rlt_kuehlen, 0.1)
-        }
-
-# --- hs/ategus: end
-        select_mkr2_betriebsart = modbusdata3.registers[12]
-        self.data["select_mkr2_betriebsart"] = self.getbetriebsart(
-            select_mkr2_betriebsart
-        )
-
-# --- hs/ategus: begin
-        climate_mkr2_raum_soll = modbusdata3.registers[13]
-        self.data["climate_mkr2_raum_soll"] = {
-            "temperature": self.checkval(climate_mkr2_raum_soll, 0.1)
-        }
-
-        climate_mkr2_rl_soll = modbusdata3.registers[14]
-        self.data["climate_mkr2_rl_soll"] = {
-            "temperature": self.checkval(climate_mkr2_rl_soll, 0.1)
-        }
-
-        climate_mkr1_rlt_kuehlen = modbusdata3.registers[16]
-        self.data["climate_mkr1_rlt_kuehlen"] = {
-            "temperature": self.checkval(climate_mkr1_rlt_kuehlen, 0.1)
-        }
-
-## Reg 117: PV Anforderung fehlt
-
-        climate_pv_heizen_offset = modbusdata3.registers[18]
-        self.data["climate_pv_heizen_offset"] = {
-            "temperature": self.checkval(climate_pv_heizen_offset, 0.1)
-        }
-
-        climate_pv_kuehlen_offset = modbusdata3.registers[19]
-        self.data["climate_pv_kuehlen_offset"] = {
-            "temperature": self.checkval(climate_pv_kuehlen_offset, 0.1)
-        }
-
-        climate_mkr1_pv_heizen_offset = modbusdata3.registers[20]
-        self.data["climate_mkr1_pv_heizen_offset"] = {
-            "temperature": self.checkval(climate_mkr1_pv_heizen_offset, 0.1)
-        }
-
-        climate_mkr1_pv_kuehlen_offset = modbusdata3.registers[21]
-        self.data["climate_mkr1_pv_kuehlen_offset"] = {
-            "temperature": self.checkval(climate_mkr1_pv_kuehlen_offset, 0.1)
-        }
-
-        climate_mkr2_pv_heizen_offset = modbusdata3.registers[22]
-        self.data["climate_mkr2_pv_heizen_offset"] = {
-            "temperature": self.checkval(climate_mkr2_pv_heizen_offset, 0.1)
-        }
-
-        climate_mkr2_pv_kuehlen_offset = modbusdata3.registers[23]
-        self.data["climate_mkr2_pv_kuehlen_offset"] = {
-            "temperature": self.checkval(climate_mkr2_pv_kuehlen_offset, 0.1)
-        }
-
-## Reg 124-152: fehlt
-
-# --- hs/ategus: end
-#---------------------eingefügt-------------------------------------------------
-#---------------------eingefügt-------------------------------------------------
-
-        # externe_anforderung = modbusdata3.registers[20]
-
+        if C_MAX_INPUT_REGISTER >= C_MIN_INPUT_REGISTER:
+            _LOGGER.debug(
+                f"Lese Input-Register {C_MIN_INPUT_REGISTER} bis {C_MAX_INPUT_REGISTER}..."
+            )
+            with self._lock:
+                modbusdata_input = self._client.read_input_registers(
+                    address=C_MIN_INPUT_REGISTER,
+                    count=C_MAX_INPUT_REGISTER - C_MIN_INPUT_REGISTER + 1,
+                    device_id=self._hostid,
+                )
+                if modbusdata_input is None or not hasattr(
+                    modbusdata_input, "registers"
+                ):
+                    _LOGGER.error("Fehler beim Lesen der Input-Register.")
+                    return False
+                _LOGGER.debug(
+                    f"{len(modbusdata_input.registers)} Input-Register: {modbusdata_input.registers}"
+                )
+                input_regs = modbusdata_input.registers
+        else:
+            _LOGGER.error("Keine Input-Register definiert.")
+            input_regs = None
+
+        if C_MAX_HOLDING_REGISTER >= C_MIN_HOLDING_REGISTER:
+            _LOGGER.debug(
+                f"Lese Holding-Register {C_MIN_HOLDING_REGISTER} bis {C_MAX_HOLDING_REGISTER}..."
+            )
+            with self._lock:
+                modbusdata_holding = self._client.read_holding_registers(
+                    address=C_MIN_HOLDING_REGISTER,
+                    count=C_MAX_HOLDING_REGISTER - C_MIN_HOLDING_REGISTER + 1,
+                    device_id=self._hostid,
+                )
+                if modbusdata_holding is None or not hasattr(
+                    modbusdata_holding, "registers"
+                ):
+                    _LOGGER.error("Fehler beim Lesen der Holding-Register.")
+                    return False
+                _LOGGER.debug(
+                    f"{len(modbusdata_holding.registers)} Holding-Register: {modbusdata_holding.registers}"
+                )
+                holding_regs = modbusdata_holding.registers
+        else:
+            _LOGGER.error("Keine Holding-Register definiert.")
+            holding_regs = None
+
+        if C_MAX_COILS >= C_MIN_COILS:
+            _LOGGER.debug(f"Lese Coils {C_MIN_COILS} bis {C_MAX_COILS}...")
+            with self._lock:
+                modbusdata_coils = self._client.read_coils(
+                    address=C_MIN_COILS,
+                    count=C_MAX_COILS - C_MIN_COILS + 1,
+                    device_id=self._hostid,
+                )
+                if modbusdata_coils is None or not hasattr(modbusdata_coils, "bits"):
+                    _LOGGER.error("Fehler beim Lesen der Coils.")
+                    return False
+                _LOGGER.debug(
+                    f"{len(modbusdata_coils.bits)} Coils: {modbusdata_coils.bits}"
+                )
+                coils = modbusdata_coils.bits
+        else:
+            _LOGGER.error("Keine Coils definiert.")
+            coils = None
+
+        if C_MAX_DISCRETE_INPUTS >= C_MIN_DISCRETE_INPUTS:
+            _LOGGER.debug(
+                f"Lese Discrete Inputs {C_MIN_DISCRETE_INPUTS} bis {C_MAX_DISCRETE_INPUTS} ..."
+            )
+            with self._lock:
+                modbusdata_discrete = self._client.read_discrete_inputs(
+                    address=C_MIN_DISCRETE_INPUTS,
+                    count=C_MAX_DISCRETE_INPUTS - C_MIN_DISCRETE_INPUTS + 1,
+                    device_id=self._hostid,
+                )
+                if modbusdata_discrete is None or not hasattr(
+                    modbusdata_discrete, "bits"
+                ):
+                    _LOGGER.error("Fehler beim Lesen der Discrete Inputs.")
+                    return False
+                _LOGGER.debug(
+                    f"{len(modbusdata_discrete.bits)} Discrete Inputs: {modbusdata_discrete.bits}"
+                )
+                discrete = modbusdata_discrete.bits
+        else:
+            _LOGGER.error("Keine Discrete Inputs definiert.")
+            discrete = None
+
+        for entity_key, props in ENTITIES_DICT.items():
+            reg_type = get_entity_type(props)
+            reg, dt = get_entity_reg(props)
+            if reg is None:
+                continue  # defensiv
+            _LOGGER.debug(f"Lese Entität '{entity_key}'.")
+            match reg_type:
+                case const.C_REG_TYPE_COILS:
+                    raw = self.read_entity_value(coils, reg - C_MIN_COILS, dt)
+                case const.C_REG_TYPE_DISCRETE_INPUTS:
+                    raw = self.read_entity_value(
+                        discrete, reg - C_MIN_DISCRETE_INPUTS, dt
+                    )
+                case const.C_REG_TYPE_INPUT_REGISTERS:
+                    raw = self.read_entity_value(
+                        input_regs, reg - C_MIN_INPUT_REGISTER, dt
+                    )
+                case const.C_REG_TYPE_HOLDING_REGISTERS:
+                    raw = self.read_entity_value(
+                        holding_regs, reg - C_MIN_HOLDING_REGISTER, dt
+                    )
+
+            if is_entity_switch(props):
+                value = self._decode_switch(props, raw)
+            elif is_entity_select(props):
+                value = self._decode_select(props, raw)
+            elif is_entity_climate(props):
+                if is_entity_readonly(props):
+                    value = self._decode_numeric(props, raw)
+                else:
+                    value = self._decode_climate(props, raw)
+            else:
+                value = self._decode_numeric(props, raw)
+
+            self.data[entity_key] = value
+
+        _LOGGER.info("Lesen der Register erfolgreich abgeschlossen.")
         return True
+
+    # ***************************************** SCHREIBEN **************************************************************
+
+    async def _write_modbus_registers(
+        self, base_reg: int, reg_values: Iterable[int], dt: ModbusTcpClient.DATATYPE
+    ):
+        """
+        Schreibt eine Sequenz 16-bit Registerwerte ab base_reg.
+
+        Mit int(word) & 0xFFFF: sicherstellen, dass der Wert in den gültigen Bereich passt.
+        Beispiel: 70000 & 0xFFFF → 4464
+                  -1 & 0xFFFF → 65535
+        """
+        _LOGGER.info(f"Schreibzugriff auf Register {base_reg}: {reg_values}")
+        for offset, word in enumerate(reg_values):
+            if dt == ModbusTcpClient.DATATYPE.BITS:
+                self._client.write_coil(
+                    address=base_reg + offset, value=bool(word), device_id=self._hostid
+                )
+            else:
+                self._client.write_register(
+                    address=base_reg + offset,
+                    value=int(word) & 0xFFFF,
+                    device_id=self._hostid,
+                )
+# ----------------------------------------------------------------
+#        climate_ww_bereitung_max = modbusdata3.registers[5]
+#        climate_ww_bereitung_min = modbusdata3.registers[6]
+#        self.data["climate_ww_bereitung"] = {
+#            "target_temp_low": self.checkval(climate_ww_bereitung_min, 0.1),
+#            "target_temp_high": self.checkval(climate_ww_bereitung_max, 0.1),
+#            "temperature": self.checkval(temp_brauchwasser, 0.1),
+#        }
+# ----------------------------------------------------------------
+
+

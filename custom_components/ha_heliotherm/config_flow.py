@@ -11,12 +11,24 @@ import homeassistant.helpers.config_validation as cv
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_DEVICE
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_NAME,
+    CONF_PORT,
+    CONF_SCAN_INTERVAL,
+)  # , CONF_DEVICE
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, DEFAULT_NAME, DEFAULT_PORT, DEFAULT_HOSTID, CONF_HOSTID
+from .const import (
+    DOMAIN,
+    DEFAULT_NAME,
+    DEFAULT_PORT,
+    DEFAULT_HOSTID,
+    DEFAULT_SCAN_INTERVAL,
+    CONF_HOSTID,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +36,9 @@ DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
         vol.Required(CONF_HOST): cv.string,
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
-        vol.Required(CONF_HOSTID, default=DEFAULT_HOSTID): int,
+        vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
+        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+        vol.Optional(CONF_HOSTID, default=DEFAULT_HOSTID): int,
     }
 )
 
@@ -93,9 +106,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -115,13 +125,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_HOST, default=self.config_entry.data[CONF_HOST]
+                        CONF_HOST, default=self.config_entry.data.get(CONF_HOST)
                     ): cv.string,
-                    vol.Required(
-                        CONF_PORT, default=self.config_entry.data[CONF_PORT]
+                    vol.Optional(
+                        CONF_PORT,
+                        default=self.config_entry.data.get(CONF_PORT, DEFAULT_PORT),
                     ): cv.port,
-                    vol.Required(
-                        CONF_HOSTID, default=self.config_entry.data[CONF_HOSTID]
+                    vol.Optional(
+                        CONF_SCAN_INTERVAL,
+                        default=self.config_entry.data.get(
+                            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                        ),
+                    ): cv.port,
+                    vol.Optional(
+                        CONF_HOSTID,
+                        default=self.config_entry.data.get(CONF_HOSTID, DEFAULT_HOSTID),
                     ): int,
                 }
             ),

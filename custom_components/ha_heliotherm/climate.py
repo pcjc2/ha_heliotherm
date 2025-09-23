@@ -1,126 +1,110 @@
-import asyncio
-from homeassistant.const import CONF_NAME
-from homeassistant.core import callback
+# custom_components/ha_heliotherm/climate.py
+# neu
+from __future__ import annotations
+
+import logging
+from typing import Optional, Any
+
 from homeassistant.components.climate import (
     ClimateEntity,
     ClimateEntityFeature,
     HVACMode,
 )
+from homeassistant.core import callback
 
-from custom_components.ha_heliotherm import HaHeliothermModbusHub
-
-import logging
-from typing import Optional, Dict, Any
-
-
-import homeassistant.util.dt as dt_util
-
-from .const import (
-    ATTR_MANUFACTURER,
-    DOMAIN,
-    CLIMATE_TYPES,
-    HaHeliothermClimateEntityDescription,
-)
+from .entity_common import HubBackedEntity, setup_platform_from_types
+from .const import CLIMATE_TYPES, HaHeliothermClimateEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
-    hub = hass.data[DOMAIN][hub_name]["hub"]
-
-    device_info = {
-        "identifiers": {(DOMAIN, hub_name)},
-        "name": hub_name,
-        "manufacturer": ATTR_MANUFACTURER,
-    }
-
-    entities = []
-    for sensor_description in CLIMATE_TYPES.values():
-        sensor = HaHeliothermModbusClimate(
-            hub_name,
-            hub,
-            device_info,
-            sensor_description,
-        )
-        entities.append(sensor)
-
-    async_add_entities(entities)
-    return True
+    """Set up Heliotherm climate entities from config entry."""
+    return await setup_platform_from_types(
+        hass=hass,
+        entry=entry,
+        async_add_entities=async_add_entities,
+        types_dict=CLIMATE_TYPES,
+        entity_cls=HeliothermClimate,
+    )
 
 
-class HaHeliothermModbusClimate(ClimateEntity):
-    """Representation of an Heliotherm Modbus sensor."""
+class HeliothermClimate(HubBackedEntity, ClimateEntity):
+    """Heliotherm Modbus Climate (reiner Sollwert-Steller)."""
 
-    def __init__(
-        self,
-        platform_name,
-        hub: HaHeliothermModbusHub,
-        device_info,
-        description: HaHeliothermClimateEntityDescription,
-    ):
-        """Initialize the sensor."""
-        self._platform_name = platform_name
-        self._attr_device_info = device_info
-        self._hub = hub
-        self.entity_description: HaHeliothermClimateEntityDescription = description
+    entity_description: HaHeliothermClimateEntityDescription
+
+    def __init__(self, platform_name, hub, device_info, description):
+        super().__init__(platform_name, hub, device_info, description)
+        # Nur AUTO anzeigen, damit kein manueller HVAC-Mode erwartet wird
         self._attr_hvac_modes = [HVACMode.AUTO]
         self._attr_hvac_mode = HVACMode.AUTO
+
+        # Statische Eigenschaften aus der Description
         self._attr_temperature_unit = description.temperature_unit
         self._attr_min_temp = description.min_value
-        self._attr_max_temp = description.max_value        
+        self._attr_max_temp = description.max_value
         self._attr_target_temperature_low = description.min_value
         self._attr_target_temperature_high = description.max_value
         self._attr_target_temperature_step = description.step
-        self._attr_supported_features = description.supported_features
-
-    async def async_added_to_hass(self):
-        """Register callbacks."""
-        self._hub.async_add_haheliotherm_modbus_sensor(self._modbus_data_updated)
-
-    async def async_will_remove_from_hass(self) -> None:
-        self._hub.async_remove_haheliotherm_modbus_sensor(self._modbus_data_updated)
-
-    @callback
-    def _modbus_data_updated(self):
-        if self.entity_description.key in self._hub.data:
-            args = self._hub.data[self.entity_description.key]
-            if "temperature" in args:
-                self._attr_current_temperature = float(args["temperature"])
-                self._attr_target_temperature = float(args["temperature"])
-            if "target_temp_low" in args:
-                self._attr_target_temperature_low = float(args["target_temp_low"])
-            if "target_temp_high" in args:
-                self._attr_target_temperature_high = float(args["target_temp_high"])
-
-        self.async_write_ha_state()
-
-    @property
-    def name(self):
-        """Return the name."""
-        return f"{self._platform_name} {self.entity_description.name}"
-
-    @property
-    def unique_id(self) -> Optional[str]:
-        return f"{self._platform_name}_{self.entity_description.key}"
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return (
-            self._hub.data[self.entity_description.key]
-            if self.entity_description.key in self._hub.data
-            else None
+        self._attr_supported_features = (
+            description.supported_features or ClimateEntityFeature.TARGET_TEMPERATURE
         )
 
+    def _apply_hub_payload(self, payload: Any) -> None:
+        """
+        Erwartet ein Dict wie:
+          {"temperature": float,
+           "target_temp_low": float | None,
+           "target_temp_high": float | None}
+        """
+        if not isinstance(payload, dict):
+            return
+
+        temp = payload.get("temperature")
+        if temp is not None:
+            self._attr_current_temperature = float(temp)
+            self._attr_target_temperature = float(temp)
+
+        lo = payload.get("target_temp_low")
+        if lo is not None:
+            self._attr_target_temperature_low = float(lo)
+
+        hi = payload.get("target_temp_high")
+        if hi is not None:
+            self._attr_target_temperature_high = float(hi)
+
     def set_temperature(self, **kwargs) -> None:
-        """Set new target temperature."""
+        """
+        Von HA aufgerufen. Reicht die gewünschten Werte an den Hub weiter.
+        Wir delegieren synchron an den Hub via create_task.
+        """
+        # Attribute lokal vorab setzen (optimiertes UI-Feedback)
         if "temperature" in kwargs:
-            self._attr_current_temperature = float(kwargs["temperature"])
-            self._attr_target_temperature = float(kwargs["temperature"])
+            t = float(kwargs["temperature"])
+            self._attr_current_temperature = t
+            self._attr_target_temperature = t
         if "target_temp_low" in kwargs:
             self._attr_target_temperature_low = float(kwargs["target_temp_low"])
         if "target_temp_high" in kwargs:
             self._attr_target_temperature_high = float(kwargs["target_temp_high"])
 
+        # Tatsächliches Schreiben an den Hub
         self.hass.add_job(self._hub.setter_function_callback(self, kwargs))
+
+    async def async_set_temperature(self, **kwargs) -> None:
+        """
+        Async-Variante (einige Frontends/Automationen nutzen diese).
+        Spiegelt die Logik von set_temperature.
+        """
+        if "temperature" in kwargs:
+            t = float(kwargs["temperature"])
+            self._attr_current_temperature = t
+            self._attr_target_temperature = t
+        if "target_temp_low" in kwargs:
+            self._attr_target_temperature_low = float(kwargs["target_temp_low"])
+        if "target_temp_high" in kwargs:
+            self._attr_target_temperature_high = float(kwargs["target_temp_high"])
+
+        await self._hub.setter_function_callback(self, kwargs)
+
