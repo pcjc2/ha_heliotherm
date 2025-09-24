@@ -1,5 +1,3 @@
-"""The HaHeliotherm integration."""
-
 from __future__ import annotations
 
 import asyncio
@@ -11,10 +9,8 @@ from typing import Any, Dict, Iterable, Tuple, Optional
 
 from pymodbus.client import ModbusTcpClient
 
-# from pymodbus.payload import Endian
 from pymodbus.exceptions import ConnectionException
 
-# from pymodbus.payload import BinaryPayloadDecoder
 import voluptuous as vol
 
 from homeassistant.helpers.entity import Entity
@@ -68,11 +64,13 @@ from .const import (
 )
 
 
+import sys
 import logging
 
+thismodule = sys.modules[__name__]
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.INFO)
-_LOGGER.info("ha_heliotherm loaded")
+_LOGGER.info(f"{thismodule} geladen.")
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,  # BINARYSENSOR_TYPES (r/o)
@@ -85,8 +83,8 @@ PLATFORMS = [
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up a HaHeliotherm modbus."""
-    _LOGGER.info(entry)
+    """Set up a modbus connection."""
+    _LOGGER.info(f"Setup Entry: {entry}")
     hass.data.setdefault(DOMAIN, {})
 
     host = entry.data.get(CONF_HOST)
@@ -99,7 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     _LOGGER.info("Setup %s.%s", DOMAIN, name)
 
-    hub = HaHeliothermModbusHub(hass, name, host, port, scan_interval, hostid)
+    hub = MyModbusHub(hass, name, host, port, scan_interval, hostid)
     # """Register the hub."""
     hass.data[DOMAIN][name] = {"hub": hub}
 
@@ -109,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 async def async_unload_entry(hass, entry):
-    """Unload HaHeliotherm mobus entry."""
+    """Unload modbus entry."""
     unload_ok = all(
         await asyncio.gather(
             *[
@@ -125,7 +123,7 @@ async def async_unload_entry(hass, entry):
     return True
 
 
-class HaHeliothermModbusHub:
+class MyModbusHub:
     """Thread safe wrapper class for pymodbus."""
 
     def __init__(
@@ -149,7 +147,7 @@ class HaHeliothermModbusHub:
         self.data: Dict[str, Any] = {}
 
     @callback
-    def async_add_haheliotherm_modbus_sensor(self, update_callback):
+    def async_add_my_modbus_sensor(self, update_callback):
         """Listen for data updates."""
         # This is the first sensor, set up interval.
         if not self._sensors:
@@ -161,7 +159,7 @@ class HaHeliothermModbusHub:
         self._sensors.append(update_callback)
 
     @callback
-    def async_remove_haheliotherm_modbus_sensor(self, update_callback):
+    def async_remove_my_modbus_sensor(self, update_callback):
         """Remove data update."""
         self._sensors.remove(update_callback)
 
@@ -416,7 +414,7 @@ class HaHeliothermModbusHub:
                 )
                 input_regs = modbusdata_input.registers
         else:
-            _LOGGER.error("Keine Input-Register definiert.")
+            _LOGGER.debug("Keine Input-Register definiert.")
             input_regs = None
 
         if C_MAX_HOLDING_REGISTER >= C_MIN_HOLDING_REGISTER:
@@ -439,7 +437,7 @@ class HaHeliothermModbusHub:
                 )
                 holding_regs = modbusdata_holding.registers
         else:
-            _LOGGER.error("Keine Holding-Register definiert.")
+            _LOGGER.debug("Keine Holding-Register definiert.")
             holding_regs = None
 
         if C_MAX_COILS >= C_MIN_COILS:
@@ -458,7 +456,7 @@ class HaHeliothermModbusHub:
                 )
                 coils = modbusdata_coils.bits
         else:
-            _LOGGER.error("Keine Coils definiert.")
+            _LOGGER.debug("Keine Coils definiert.")
             coils = None
 
         if C_MAX_DISCRETE_INPUTS >= C_MIN_DISCRETE_INPUTS:
@@ -481,7 +479,7 @@ class HaHeliothermModbusHub:
                 )
                 discrete = modbusdata_discrete.bits
         else:
-            _LOGGER.error("Keine Discrete Inputs definiert.")
+            _LOGGER.debug("Keine Discrete Inputs definiert.")
             discrete = None
 
         for entity_key, props in ENTITIES_DICT.items():

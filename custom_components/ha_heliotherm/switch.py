@@ -1,4 +1,3 @@
-# custom_components/ha_heliotherm/switch.py
 from __future__ import annotations
 
 import logging
@@ -7,26 +6,26 @@ from typing import Optional, Any
 from homeassistant.components.switch import SwitchEntity
 
 from .entity_common import HubBackedEntity, setup_platform_from_types
-from .const import BINARY_TYPES, HaHeliothermBinaryEntityDescription
+from .const import BINARY_TYPES, MyBinaryEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up Heliotherm switch entities from config entry."""
+    """Set up my switch entities from config entry."""
     return await setup_platform_from_types(
         hass=hass,
         entry=entry,
         async_add_entities=async_add_entities,
         types_dict=BINARY_TYPES,
-        entity_cls=HeliothermSwitch,
+        entity_cls=MySwitch,
     )
 
 
-class HeliothermSwitch(HubBackedEntity, SwitchEntity):
-    """Zehnder ComfoConnect PRO Modbus switch (r/w)."""
+class MySwitch(HubBackedEntity, SwitchEntity):
+    """My Modbus switch (r/w)."""
 
-    entity_description: HaHeliothermBinaryEntityDescription
+    entity_description: MyBinaryEntityDescription
 
     # def __init__ nicht erforderlich, verwendet __init__ aus HubBackedEntity, da keine eigenen Attribute zusätzlich angelegt werden müssen
 

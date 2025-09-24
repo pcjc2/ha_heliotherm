@@ -1,4 +1,4 @@
-"""Constants for the HaHeliotherm integration."""
+"""Constants for the integration."""
 
 from __future__ import annotations
 
@@ -35,12 +35,12 @@ from pymodbus.client import ModbusTcpClient
 
 import logging
 
+thismodule = sys.modules[__name__]
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
-_LOGGER.info("ha_heliotherm loaded")
+_LOGGER.info(f"{thismodule}.const loaded")
 
 
-thismodule = sys.modules[__name__]
 
 
 DOMAIN = "ha_heliotherm"
@@ -334,25 +334,25 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
 
 
 @dataclass
-class HaHeliothermBinarySensorEntityDescription(BinarySensorEntityDescription):
-    """A class that describes HaHeliotherm Modbus binarysensor entities."""
+class MyBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """A class that describes Modbus binarysensor entities."""
 
 
 @dataclass
-class HaHeliothermSensorEntityDescription(SensorEntityDescription):
-    """A class that describes HaHeliotherm Modbus sensor entities."""
+class MySensorEntityDescription(SensorEntityDescription):
+    """A class that describes Modbus sensor entities."""
 
 
 @dataclass
-class HaHeliothermBinaryEntityDescription(BinarySensorEntityDescription):
-    """A class that describes HaHeliotherm Modbus binary entities."""
+class MyBinaryEntityDescription(BinarySensorEntityDescription):
+    """A class that describes Modbus binary entities."""
 
     # Hinweis: Falls echte Schalter-Entities verwendet werden, ggf. SwitchEntityDescription verwenden.
 
 
 @dataclass
-class HaHeliothermSelectEntityDescription(SensorEntityDescription):
-    """A class that describes HaHeliotherm Modbus select sensor entities."""
+class MySelectEntityDescription(SensorEntityDescription):
+    """A class that describes Modbus select sensor entities."""
 
     select_options: list[str] = None
     default_select_option: str = None
@@ -360,8 +360,8 @@ class HaHeliothermSelectEntityDescription(SensorEntityDescription):
 
 
 @dataclass
-class HaHeliothermClimateEntityDescription(ClimateEntityDescription):
-    """A class that describes HaHeliotherm Modbus climate sensor entities."""
+class MyClimateEntityDescription(ClimateEntityDescription):
+    """A class that describes Modbus climate sensor entities."""
 
     min_value: float = None
     max_value: float = None
@@ -372,20 +372,20 @@ class HaHeliothermClimateEntityDescription(ClimateEntityDescription):
 
 
 @dataclass
-class HaHeliothermNumberEntityDescription(NumberEntityDescription):
-    """A class that describes HaHeliotherm Modbus number entities."""
+class MyNumberEntityDescription(NumberEntityDescription):
+    """A class that describes Modbus number entities."""
 
     mode: str = "slider"
     initial: float = None
     editable: bool = True
 
 
-BINARYSENSOR_TYPES: dict[str, HaHeliothermBinarySensorEntityDescription] = {}
-SENSOR_TYPES: dict[str, HaHeliothermSensorEntityDescription] = {}
-SELECT_TYPES: dict[str, HaHeliothermSelectEntityDescription] = {}
-CLIMATE_TYPES: dict[str, HaHeliothermClimateEntityDescription] = {}
-NUMBER_TYPES: dict[str, HaHeliothermNumberEntityDescription] = {}
-BINARY_TYPES: dict[str, HaHeliothermBinaryEntityDescription] = {}
+BINARYSENSOR_TYPES: dict[str, MyBinarySensorEntityDescription] = {}
+SENSOR_TYPES: dict[str, MySensorEntityDescription] = {}
+SELECT_TYPES: dict[str, MySelectEntityDescription] = {}
+CLIMATE_TYPES: dict[str, MyClimateEntityDescription] = {}
+NUMBER_TYPES: dict[str, MyNumberEntityDescription] = {}
+BINARY_TYPES: dict[str, MyBinaryEntityDescription] = {}
 
 
 # --------------------------------------------------------------------
@@ -555,26 +555,26 @@ def _classify_register(props: Dict[str, Any]) -> int | None:
     if is_entity_readonly(props):
         if is_entity_switch(props):
             """Nicht beschreibbar, Schalter (SWITCH!=None)."""
-            return HaHeliothermBinarySensorEntityDescription # C_REGISTERCLASS_BINARY_SENSOR
+            return MyBinarySensorEntityDescription  # C_REGISTERCLASS_BINARY_SENSOR
         elif is_entity_select(props):
             """Nicht beschreibbar, Auswahl (VALUES enthält mindestens ein Element)."""
-            return HaHeliothermSensorEntityDescription # C_REGISTERCLASS_SELECT_ENTITY
+            return MySensorEntityDescription  # C_REGISTERCLASS_SELECT_ENTITY
         else:
             """Nicht beschreibbar, kein Schalter (SWITCH=None)."""
-            return HaHeliothermSensorEntityDescription # C_REGISTERCLASS_SENSOR
+            return MySensorEntityDescription  # C_REGISTERCLASS_SENSOR
     else:
         if is_entity_switch(props):
             """Beschreibbar, Schalter (SWITCH!=None)."""
-            return HaHeliothermBinaryEntityDescription # C_REGISTERCLASS_BINARY_ENTITY
+            return MyBinaryEntityDescription  # C_REGISTERCLASS_BINARY_ENTITY
         elif is_entity_select(props):
             """Beschreibbar, Auswahl (VALUES enthält mindestens ein Element)."""
-            return HaHeliothermSelectEntityDescription # C_REGISTERCLASS_SELECT_ENTITY
+            return MySelectEntityDescription  # C_REGISTERCLASS_SELECT_ENTITY
         elif is_entity_climate(props):
             """Beschreibbar, Nur Temperatureinheiten (°C oder K) zulassen"""
-            return HaHeliothermClimateEntityDescription # C_REGISTERCLASS_CLIMATE_ENTITY
+            return MyClimateEntityDescription  # C_REGISTERCLASS_CLIMATE_ENTITY
         else:
             """Beschreibbar, kein Schalter (SWITCH=None), keine Auswahl (VALUES ist None), Einheit optional, aber nicht °C oder K."""
-            return HaHeliothermNumberEntityDescription # C_REGISTERCLASS_NUMBER_ENTITY
+            return MyNumberEntityDescription  # C_REGISTERCLASS_NUMBER_ENTITY
 
 
 def _unit_mapping(
@@ -674,7 +674,7 @@ def init():
     if _initialized:
         return
     _LOGGER.info(
-        "**************************************** ha_heliotherm initalizing ***************************************"
+        "****************************************  initalizing ***************************************"
     )
 
     thismodule.BINARYSENSOR_TYPES = {}
@@ -697,7 +697,7 @@ def init():
         if entity_key not in ha_entities:
 
             match registerclass:
-                case thismodule.HaHeliothermSensorEntityDescription:
+                case thismodule.MySensorEntityDescription:
                     unit, device_class, state_class = _unit_mapping(get_entity_unit(props))
                     _LOGGER.debug(f"Sensor {entity_key}: {name}, Einheit {unit}")
                     SENSOR_TYPES[entity_key] = registerclass(
@@ -708,14 +708,14 @@ def init():
                         state_class=state_class,
                     )
 
-                case thismodule.HaHeliothermBinarySensorEntityDescription:
+                case thismodule.MyBinarySensorEntityDescription:
                     _LOGGER.debug(f"Binär-Sensor {entity_key}: {name}")
                     BINARYSENSOR_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
                     )
 
-                case thismodule.HaHeliothermClimateEntityDescription:
+                case thismodule.MyClimateEntityDescription:
                     #key = f"{C_PREFIX_CLIMATE}_{entity_key}"
                     min_value=get_entity_min(props)
                     max_value=get_entity_max(props)
@@ -734,7 +734,7 @@ def init():
                         supported_features=props.get("FEATURES", ClimateEntityFeature.TARGET_TEMPERATURE),
                     )
 
-                case thismodule.HaHeliothermNumberEntityDescription:
+                case thismodule.MyNumberEntityDescription:
                     #key = f"{C_PREFIX_NUMBER}_{entity_key}"
                     min_value=get_entity_min(props)
                     max_value=get_entity_max(props)
@@ -752,7 +752,7 @@ def init():
                         mode="box"
                     )
 
-                case thismodule.HaHeliothermBinaryEntityDescription:
+                case thismodule.MyBinaryEntityDescription:
                     #key = f"{C_PREFIX_SWITCH}_{entity_key}"
                     _LOGGER.debug(f"Schalter {entity_key}: {name}")
                     BINARY_TYPES[entity_key] = registerclass(
@@ -760,7 +760,7 @@ def init():
                         key=entity_key,
                     )
 
-                case thismodule.HaHeliothermSelectEntityDescription:
+                case thismodule.MySelectEntityDescription:
                     #key = f"{C_PREFIX_SELECT}_{entity_key}"
                     values, default = get_entity_select_values_and_default(props)
                     _LOGGER.debug(f"Auswahl-Entität {entity_key}: {name}, Werte-Bereich: {values}, Default: {default}")
@@ -794,7 +794,9 @@ def init():
     _LOGGER.debug(f"- {len(BINARY_TYPES)} Schalter")
     _LOGGER.debug(f"- {len(CLIMATE_TYPES)} Temperatur-Stellwerte")
     _LOGGER.debug(f"- {len(NUMBER_TYPES)} Numerische Stellwerte")
-    _LOGGER.info("**************************************** ha_heliotherm initalized ****************************************")
+    _LOGGER.info(
+        "****************************************  initalized ****************************************"
+    )
 
 
 init()

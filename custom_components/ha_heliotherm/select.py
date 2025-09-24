@@ -1,5 +1,3 @@
-# custom_components/ha_heliotherm/select.py
-# neu
 from __future__ import annotations
 
 import logging
@@ -9,26 +7,26 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.core import callback
 
 from .entity_common import HubBackedEntity, setup_platform_from_types
-from .const import SELECT_TYPES, HaHeliothermSelectEntityDescription
+from .const import SELECT_TYPES, MySelectEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up Heliotherm select entities from config entry."""
+    """Set up my select entities from config entry."""
     return await setup_platform_from_types(
         hass=hass,
         entry=entry,
         async_add_entities=async_add_entities,
         types_dict=SELECT_TYPES,
-        entity_cls=HeliothermSelect,
+        entity_cls=MySelect,
     )
 
 
-class HeliothermSelect(HubBackedEntity, SelectEntity):
-    """Heliotherm select entity."""
+class MySelect(HubBackedEntity, SelectEntity):
+    """My select entity."""
 
-    entity_description: HaHeliothermSelectEntityDescription
+    entity_description: MySelectEntityDescription
     _attr_current_option: Optional[str]
     _setter_function: Optional[Any]
 
@@ -37,7 +35,7 @@ class HeliothermSelect(HubBackedEntity, SelectEntity):
         platform_name,
         hub,
         device_info,
-        description: HaHeliothermSelectEntityDescription,
+        description: MySelectEntityDescription,
     ):
         super().__init__(platform_name, hub, device_info, description)
         # Optionen & Default aus der Description übernehmen

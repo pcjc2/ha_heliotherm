@@ -1,5 +1,3 @@
-# custom_components/ha_heliotherm/sensor.py
-# neu
 from __future__ import annotations
 
 import logging
@@ -8,26 +6,26 @@ from typing import Optional, Any
 from homeassistant.components.sensor import SensorEntity
 
 from .entity_common import HubBackedEntity, setup_platform_from_types
-from .const import SENSOR_TYPES, HaHeliothermSensorEntityDescription
+from .const import SENSOR_TYPES, MySensorEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up Heliotherm sensor entities from config entry."""
+    """Set up my sensor entities from config entry."""
     return await setup_platform_from_types(
         hass=hass,
         entry=entry,
         async_add_entities=async_add_entities,
         types_dict=SENSOR_TYPES,
-        entity_cls=HeliothermSensor,
+        entity_cls=MySensor,
     )
 
 
-class HeliothermSensor(HubBackedEntity, SensorEntity):
-    """Heliotherm Modbus sensor entity."""
+class MySensor(HubBackedEntity, SensorEntity):
+    """My Modbus sensor entity."""
 
-    entity_description: HaHeliothermSensorEntityDescription
+    entity_description: MySensorEntityDescription
 
     # def __init__ nicht erforderlich, verwendet __init__ aus HubBackedEntity, da keine eigenen Attribute zusätzlich angelegt werden müssen
 
