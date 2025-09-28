@@ -121,6 +121,7 @@ C_MKR1_RUECKLAUFTEMPERATUR = "mkr1_ruecklauftemperatur"
 C_MKR2_VORLAUFTEMPERATUR = "mkr2_vorlauftemperatur"
 C_MKR2_RUECKLAUFTEMPERATUR = "mkr2_ruecklauftemperatur"
 C_RAUMFUEHLER_1 = "raumfuehler_1"
+C_EQ_VENTILATOR_PUMPE_PROZENT = "eq_ventilator_pumpe_prozent"
 
 C_WMZ_HEIZUNG = "wmz_heizung"
 C_STROMZAEHLER_HEIZUNG = "stromzaehler_heizung"
@@ -213,7 +214,7 @@ C_TF22_HAND_AKTIV = "switch_tf22_hand_aktiv"
 # --------------------------------------------------------------------------------------------
 
 # Modbus-Register gemäß 20230705_Fachmannebene_RCGX_1.0.5.4_DE_mail.pdf vom 24.04.2023
-# Getestet mit Heliotherm Complete RCG 2.0.0.10
+# Getestet mit Heliotherm Complete RCG 2.0.0.10 und Visualisierung 2.1.0.5
 
 # --- ENTITIES_DICT ---
 ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
@@ -258,7 +259,9 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_MKR2_VORLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 Vorlauftemperatur","REG":48,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 69"},
     C_MKR2_RUECKLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 Rücklauftemperatur","REG":49,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 70"},
     C_RAUMFUEHLER_1: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Raumfühler 1","REG":50,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 16"},
-    # --- 51-59 werden aktuell nicht genutzt ---
+    # --- 51-52 werden aktuell nicht genutzt ---
+    C_EQ_VENTILATOR_PUMPE_PROZENT: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"EQ Ventilator/Pumpe [%]","REG":53,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"%","WEB_ID":"MP 48"},
+    # --- 54-59 werden aktuell nicht genutzt ---
     C_WMZ_HEIZUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WMZ Heizung","REG":60,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"kW/h","WEB_ID":"MP 52"},
     C_STROMZAEHLER_HEIZUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Stromzähler Heizung","REG":62,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"kW/h","WEB_ID":"MP 53"},
     C_WMZ_BRAUCHWASSER: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WMZ Brauchwasser","REG":64,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"kW/h","WEB_ID":"MP 54"},
