@@ -594,7 +594,7 @@ def _unit_mapping(
     u = unit.strip()
     # Temperatur
     if u == "°C":
-    OA    return (
+        return (
             UnitOfTemperature.CELSIUS,
             SensorDeviceClass.TEMPERATURE,
             SensorStateClass.MEASUREMENT,
