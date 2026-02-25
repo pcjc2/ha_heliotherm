@@ -121,6 +121,8 @@ C_MKR1_RUECKLAUFTEMPERATUR = "mkr1_ruecklauftemperatur"
 C_MKR2_VORLAUFTEMPERATUR = "mkr2_vorlauftemperatur"
 C_MKR2_RUECKLAUFTEMPERATUR = "mkr2_ruecklauftemperatur"
 C_RAUMFUEHLER_1 = "raumfuehler_1"
+C_SOLAR_KT1 = "solar_kt1"
+C_FLOW_PRI = "flow_pri"
 C_EQ_VENTILATOR_PUMPE_PROZENT = "eq_ventilator_pumpe_prozent"
 
 C_WMZ_HEIZUNG = "wmz_heizung"
@@ -259,7 +261,8 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_MKR2_VORLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 flow temp.","REG":48,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 69"},
     C_MKR2_RUECKLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 return temp.","REG":49,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 70"},
     C_RAUMFUEHLER_1: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Room temperature 1","REG":50,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 16"},
-    # --- 51-52 werden aktuell nicht genutzt ---
+    C_SOLAR_KT1: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Solar KT1","REG":51,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 43"},
+    C_FLOW_PRI: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Primary flow","REG":52,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"l/min","WEB_ID":"MP 104"},
     C_EQ_VENTILATOR_PUMPE_PROZENT: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Aircoil fan [%]","REG":53,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"%","WEB_ID":"MP 48"},
     # --- 54-59 werden aktuell nicht genutzt ---
     C_WMZ_HEIZUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WMZ Heizung","REG":60,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"kWh","WEB_ID":"MP 52"},
@@ -276,7 +279,7 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_RAUMSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Room temperature target","REG":101,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 69","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Return temperature target","REG":102,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":5.0,"MAX":65.0,"HA":C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV,"WEB_ID":"MP 57","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Return temperature setpoint hand/auto","REG":103,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 57"},
-    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min return temperature (cooling)","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 157","PF":Platform.NUMBER},
+    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min return temperature (cooling)","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 175","PF":Platform.NUMBER},
     # Achtung: Abweichend zur Originalimplementierung: Dies ist 105/106 *KEIN* Regler mit ClimateEntityFeature.TARGET_TEMPERATURE_RANGE, sondern 106 ist die Frostschutzgrenze und 105 der Zielwert für die WW-Bereitung!!
     # Die Normaltemperatur ist nur eine Vorgabe, die Regelelektronik kann das Wasser höher erwärmen, wenn die Zykluszeit sonst zu kurz wäre.
     C_WW_NORMALTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"DHW normal temperature","REG":105,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":5.0,"MAX":65.0,"WEB_ID":"SP 83","PF":Platform.NUMBER},
@@ -326,6 +329,7 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_EVU_SPERRE_HANDWERT: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Utility company lock hand value","REG":149,"DT":C_DT_INT16,"SWITCH":{"off":0,"on":1},"HA":C_EVU_SPERRE_HAND_AKTIV,"WEB_ID":"MP 37"},
     C_EVU_SPERRE_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Utility company lock hand/auto","REG":150,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 37"},
     # Raumbediengerät TF22
+    # Writeable - but not readable??
     C_TF22_HANDWERT: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"TF22 hand value","REG":151,"DT":C_DT_INT16,"FAKTOR":1,"STEP":1.0,"MIN":-80.0,"MAX":80.0,"WEB_ID":"MP 10","HA":C_TF22_HAND_AKTIV,"PF":Platform.NUMBER},
     C_TF22_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"TF22 hand/auto","REG":152,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 10"},
 }
