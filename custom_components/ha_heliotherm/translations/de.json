@@ -149,6 +149,9 @@
       },
       "wmz_leistung": {
         "name": "WMZ Leistung"
+      },
+      "input_vorgabe_verdichterdrehzahl": {
+        "name": "Vorgabe Verdichterdrehzahl"
       }
     },
     "binary_sensor": {
@@ -322,9 +325,6 @@
       },
       "input_vorgabe_leistungsaufnahme": {
         "name": "Vorgabe Leistungsaufnahme"
-      },
-      "input_vorgabe_verdichterdrehzahl": {
-        "name": "Vorgabe Verdichterdrehzahl"
       },
       "climate_aussentemperatur_handwert": {
         "name": "Aussentemperatur Handwert"

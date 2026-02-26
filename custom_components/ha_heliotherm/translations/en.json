@@ -149,6 +149,9 @@
       },
       "wmz_leistung": {
         "name": "Thermal output Now"
+      },
+      "input_vorgabe_verdichterdrehzahl": {
+        "name": "Compressor speed specified"
       }
     },
     "binary_sensor": {
@@ -322,9 +325,6 @@
       },
       "input_vorgabe_leistungsaufnahme": {
         "name": "Specified power consumtpion"
-      },
-      "input_vorgabe_verdichterdrehzahl": {
-        "name": "Compressor speed specified"
       },
       "climate_aussentemperatur_handwert": {
         "name": "Outside temperature hand value"
