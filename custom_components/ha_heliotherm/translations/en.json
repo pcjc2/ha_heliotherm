@@ -94,19 +94,19 @@
         "name": "Expansion valve"
       },
       "verdichteranforderung": {
-        "name": "Verdichteranforderung",
+        "name": "Compressor mode",
         "state": {
-          "keine_anforderung": "Keine Anforderung",
-          "kuehlen": "Kühlen",
-          "heizen": "Heizen",
-          "warmwasser": "Warmwasser"
+          "keine_anforderung": "Idle",
+          "kuehlen": "Cooling",
+          "heizen": "Heating",
+          "warmwasser": "DHW"
         }
       },
       "betriebsstunden_im_ww_betrieb": {
-        "name": "Compressor requirement im WW-Betrieb"
+        "name": "Compressor operating hours (DHW)"
       },
       "betriebsstunden_im_hzg_betrieb": {
-        "name": "Compressor requirement im HZG-Betrieb"
+        "name": "Compressor operating hours (heating)"
       },
       "mkr1_vorlauftemperatur": {
         "name": "MKR1 flow temp."
@@ -127,28 +127,28 @@
         "name": "Aircoil fan"
       },
       "wmz_heizung": {
-        "name": "WMZ Heizung"
+        "name": "Thermal energy (heating)"
       },
       "stromzaehler_heizung": {
-        "name": "Stromzähler Heizung"
+        "name": "Electricity meter (heating)"
       },
       "wmz_brauchwasser": {
-        "name": "WMZ Brauchwasser"
+        "name": "Thermal energy (DHW)"
       },
       "stromzaehler_brauchwasser": {
-        "name": "Electricity meter DHW"
+        "name": "Electricity meter (DHW)"
       },
       "stromzaehler_gesamt": {
         "name": "Electricity meter total Gesamt"
       },
       "stromzaehler_leistung": {
-        "name": "Electricity meter output"
+        "name": "Electricity consumption (now)"
       },
       "wmz_gesamt": {
-        "name": "WMZ Total"
+        "name": "Thermal energy (Total)"
       },
       "wmz_leistung": {
-        "name": "WMZ Now"
+        "name": "Thermal output Now"
       }
     },
     "binary_sensor": {
@@ -162,7 +162,7 @@
         "name": "Compressor"
       },
       "stoerung": {
-        "name": "Störung"
+        "name": "Disturbance (Störung)"
       },
       "vierwegenventil_abtaubetrieb": {
         "name": "Reversing valve (defrost)"
@@ -174,7 +174,7 @@
         "name": "Aircoil fan"
       },
       "ww_vorrang_ww": {
-        "name": "WW Vorrang WW"
+        "name": "DHW Priority (WW Vorrang WW)"
       },
       "kuehlen_umv_passiv": {
         "name": "Passive cooling"
@@ -209,10 +209,10 @@
         "name": "DHW temperature hand/auto"
       },
       "switch_2_stufe_handwert": {
-        "name": "2. Stufe Handwert"
+        "name": "2nd stage hand value"
       },
       "switch_2_stufe_hand_aktiv": {
-        "name": "2. Stufe Hand-Aktiv"
+        "name": "2nd stage hand/auto"
       },
       "switch_evu_sperre_handwert": {
         "name": "Utility company lock hand value"
@@ -273,7 +273,7 @@
         "name": "Return temperature target"
       },
       "climate_min_ruecklauftemperatur_kuehlen": {
-        "name": "min return temperature (cooling)"
+        "name": "Min return temperature (cooling)"
       },
       "climate_ww_normaltemperatur": {
         "name": "DHW normal temperature"
@@ -324,7 +324,7 @@
         "name": "Specified power consumtpion"
       },
       "input_vorgabe_verdichterdrehzahl": {
-        "name": "Vorgabe Verdichterdrehzahl"
+        "name": "Compressor speed specified"
       },
       "climate_aussentemperatur_handwert": {
         "name": "Outside temperature hand value"
@@ -377,103 +377,103 @@
     },
     "climate": {
       "climate_raumsolltemperatur": {
-        "name": "Raumsolltemperatur"
+        "name": "Room target temperature"
       },
       "climate_ruecklaufsolltemperatur": {
-        "name": "Rücklaufsolltemperatur"
+        "name": "Return target temperature"
       },
       "climate_min_ruecklauftemperatur_kuehlen": {
-        "name": "min Rücklauftemperatur Kühlen"
+        "name": "min return target temperature (cooling)"
       },
       "climate_ww_normaltemperatur": {
-        "name": "WW Normaltemperatur"
+        "name": "WW Normal temperature"
       },
       "climate_ww_minimaltemperatur": {
-        "name": "WW Minimaltemperatur"
+        "name": "WW Min temperaturer"
       },
       "climate_mkr1_raumsolltemperatur": {
-        "name": "MKR1 Raumsolltemperatur"
+        "name": "MKR1 room target temperature"
       },
       "climate_mkr1_solltemperatur": {
-        "name": "MKR1 Solltemperatur"
+        "name": "MKR1 target temperature"
       },
       "climate_mkr1_min_ruecklauftemperatur_kuehlen": {
-        "name": "MKR1 min Rücklauftemperatur Kühlen"
+        "name": "MKR1 min return temperature (cooling)"
       },
       "climate_mkr2_raumsolltemperatur": {
-        "name": "MKR2 Raumsolltemperatur"
+        "name": "MKR2 Room target temperaturer"
       },
       "climate_mkr2_solltemperatur": {
-        "name": "MKR2 Solltemperatur"
+        "name": "MKR2 target temperature"
       },
       "climate_mkr2_min_ruecklauftemperatur_kuehlen": {
-        "name": "MKR2 min Rücklauftemperatur Kühlen"
+        "name": "MKR2 min return temperature (cooling)"
       },
       "climate_pv_heizen_offset": {
-        "name": "PV Heizen Offset"
+        "name": "PV heating Offset"
       },
       "climate_pv_kuehlen_offset": {
-        "name": "PV Kuehlen Offset"
+        "name": "PV cooling Offset"
       },
       "climate_pv_heizen_offset_mkr1": {
-        "name": "PV Heizen Offset MKR1"
+        "name": "PV heating Offset MKR1"
       },
       "climate_pv_kuehlen_offset_mkr1": {
-        "name": "PV Kühlen Offset MKR1"
+        "name": "PV cooling Offset MKR1"
       },
       "climate_pv_heizen_offset_mkr2": {
-        "name": "PV Heizen Offset MKR2"
+        "name": "PV heating Offset MKR2"
       },
       "climate_pv_kuehlen_offset_mkr2": {
-        "name": "PV Kühlen Offset MKR2"
+        "name": "PV coolnig Offset MKR2"
       },
       "climate_ww_normal_max": {
         "name": "WW Normal Max"
       },
       "climate_aussentemperatur_handwert": {
-        "name": "Aussentemperatur Handwert"
+        "name": "Outside temperature hand value"
       },
       "climate_puffertemperatur_handwert": {
-        "name": "Puffertemperatur Handwert"
+        "name": "Buffer temperature hand value"
       },
       "climate_brauchwassertemperatur_handwert": {
-        "name": "Brauchwassertemperatur Handwert"
+        "name": "DHW tempeature hand value"
       },
       "climate_hkr_heizgrenze": {
-        "name": "HKR Heizgrenze"
+        "name": "HKR Heating limit"
       },
       "climate_hkr_ruecklaufsoll_bei_heizgrenze": {
-        "name": "HKR Rücklaufsoll bei Heizgrenze"
+        "name": "HKR Return temperature at heating limit"
       },
       "climate_hkr_ruecklaufsoll_bei_0_c": {
-        "name": "HKR Rücklaufsoll bei 0°C"
+        "name": "HKR Return temperature at 0°C"
       },
       "climate_hkr_ruecklaufsoll_bei_15_c": {
-        "name": "HKR Rücklaufsoll bei -15°C"
+        "name": "HKR Return temperature at -15°C"
       },
       "climate_mkr1_heizgrenze": {
-        "name": "MKR1 Heizgrenze"
+        "name": "MKR1 Heating limit"
       },
       "climate_mkr1_ruecklaufsoll_bei_heizgrenze": {
-        "name": "MKR1 Rücklaufsoll bei Heizgrenze"
+        "name": "MKR1 Return temperature SP at heating limit"
       },
       "climate_mkr1_ruecklaufsoll_bei_0_c": {
-        "name": "MKR1 Rücklaufsoll bei 0°C"
+        "name": "MKR1 Return temperature SP at 0°C"
       },
       "climate_mkr1_ruecklaufsoll_bei_15_c": {
-        "name": "MKR1 Rücklaufsoll bei -15°C"
+        "name": "MKR1 Return temperature SP at -15°C"
       },
       "climate_mkr2_heizgrenze": {
-        "name": "MKR2 Heizgrenze"
+        "name": "MKR2 Heating limit"
       },
       "climate_mkr2_ruecklaufsoll_bei_heizgrenze": {
-        "name": "MKR2 Rücklaufsoll bei Heizgrenze"
+        "name": "MKR2 Return temperature SP at heating limit"
       },
       "climate_mkr2_ruecklaufsoll_bei_0_c": {
-        "name": "MKR2 Rücklaufsoll bei 0°C"
+        "name": "MKR2 Return temperature SP at 0°C"
       },
       "climate_mkr2_ruecklaufsoll_bei_15_c": {
-        "name": "MKR2 Rücklaufsoll bei -15°C"
+        "name": "MKR2 Return temperature SP at h -15°C"
       }
     }
   }
