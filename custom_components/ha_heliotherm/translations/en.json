@@ -139,7 +139,7 @@
         "name": "Electricity meter (DHW)"
       },
       "stromzaehler_gesamt": {
-        "name": "Electricity meter total Gesamt"
+        "name": "Electricity meter (total)"
       },
       "stromzaehler_leistung": {
         "name": "Electricity consumption (now)"
