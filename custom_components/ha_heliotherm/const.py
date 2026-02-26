@@ -702,7 +702,8 @@ def init():
         if entity_ha:
             ha_entities.append(entity_ha)
 
-        if entity_key not in ha_entities:
+        #if entity_key not in ha_entities:
+        if True:
 
             match registerclass:
                 case thismodule.MySensorEntityDescription:
