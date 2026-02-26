@@ -124,6 +124,8 @@ C_MKR1_RUECKLAUFTEMPERATUR = "mkr1_ruecklauftemperatur"
 C_MKR2_VORLAUFTEMPERATUR = "mkr2_vorlauftemperatur"
 C_MKR2_RUECKLAUFTEMPERATUR = "mkr2_ruecklauftemperatur"
 C_RAUMFUEHLER_1 = "raumfuehler_1"
+C_SOLAR_KT1 = "solar_kt1"
+C_FLOW_PRI = "flow_pri"
 C_EQ_VENTILATOR_PUMPE_PROZENT = "eq_ventilator_pumpe_prozent"
 
 C_WMZ_HEIZUNG = "wmz_heizung"
@@ -254,7 +256,7 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_WW_VORRANG_WW: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WW Vorrang WW","REG":38,"DT":C_DT_INT16,"SWITCH":{"off":0},"WEB_ID":"MP 25"},
     C_KUEHLEN_UMV_PASSIV: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Kühlen UMV passiv","REG":39,"DT":C_DT_INT16,"SWITCH":{"off":0},"WEB_ID":"MP 27"},
     C_EXPANSIONSVENTIL: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Expansionsventil","REG":40,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"‰","WEB_ID":"MP 51"},
-    C_VERDICHTERANFORDERUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Verdichteranforderung","REG":41,"DT":C_DT_INT16,"VALUES":{0:"Keine Anforderung",10:"Kühlen",20:"Heizen",30:"Warmwasser"},"WEB_ID":"MP 56"},
+    C_VERDICHTERANFORDERUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Verdichteranforderung","REG":41,"DT":C_DT_INT16,"VALUES":{0: "keine_anforderung",10: "kuehlen",20: "heizen",30: "warmwasser"},"WEB_ID":"MP 56"},
     C_BETRIEBSSTUNDEN_IM_WW_BETRIEB: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Betriebsstunden im WW-Betrieb","REG":42,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"h","WEB_ID":"SP 171"},
     C_BETRIEBSSTUNDEN_IM_HZG_BETRIEB: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Betriebsstunden im HZG-Betrieb","REG":44,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"h","WEB_ID":"SP 172"},
     C_MKR1_VORLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR1 Vorlauftemperatur","REG":46,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 63"},
@@ -262,7 +264,8 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_MKR2_VORLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 Vorlauftemperatur","REG":48,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 69"},
     C_MKR2_RUECKLAUFTEMPERATUR: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"MKR2 Rücklauftemperatur","REG":49,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 70"},
     C_RAUMFUEHLER_1: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Raumfühler 1","REG":50,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 16"},
-    # --- 51-52 werden aktuell nicht genutzt ---
+    C_SOLAR_KT1: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Solar KT1","REG":51,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","WEB_ID":"MP 43"},
+    C_FLOW_PRI: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"Primary flow","REG":52,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"l/min","WEB_ID":"MP 104"},
     C_EQ_VENTILATOR_PUMPE_PROZENT: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"EQ Ventilator/Pumpe [%]","REG":53,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"%","WEB_ID":"MP 48"},
     # --- 54-59 werden aktuell nicht genutzt ---
     C_WMZ_HEIZUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WMZ Heizung","REG":60,"DT":C_DT_UINT32,"FAKTOR":1,"UNIT":"kW/h","WEB_ID":"MP 52"},
@@ -275,21 +278,21 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_WMZ_LEISTUNG: {"RT": C_REG_TYPE_INPUT_REGISTERS,"NAME":"WMZ Leistung","REG":74,"DT":C_DT_UINT32,"FAKTOR":0.1,"UNIT":"kW","WEB_ID":"MP 89"},
     # --- 76-99 werden aktuell nicht genutzt ---
     # HOLDING_REGISTERS
-    C_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Betriebsart","REG":100,"DT":C_DT_UINT16,"VALUES":{0:"Aus",1:"Automatik",2:"Kühlen",3:"Sommer",4:"Dauerbetrieb",5:"Absenkbetrieb",6:"Urlaub",7:"Party","default":1},"WEB_ID":"SP 13"},
+    C_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Betriebsart","REG":100,"DT":C_DT_UINT16,"VALUES":{0: "aus",1: "automatik",2: "kuehlen",3: "sommer",4: "dauerbetrieb",5: "absenkbetrieb",6: "urlaub",7: "party","default":1},"WEB_ID":"SP 13"},
     C_RAUMSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Raumsolltemperatur","REG":101,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 69","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Rücklaufsolltemperatur","REG":102,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":5.0,"MAX":65.0,"HA":C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV,"WEB_ID":"MP 57","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Rücklaufsolltemperatur Hand-Aktiv","REG":103,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 57"},
-    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min Rücklauftemperatur Kühlen","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 157","PF":Platform.NUMBER},
+    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min Rücklauftemperatur Kühlen","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 175","PF":Platform.NUMBER},
     # Achtung: Abweichend zur Originalimplementierung: Dies ist 105/106 *KEIN* Regler mit ClimateEntityFeature.TARGET_TEMPERATURE_RANGE, sondern 106 ist die Frostschutzgrenze und 105 der Zielwert für die WW-Bereitung!!
     # Die Normaltemperatur ist nur eine Vorgabe, die Regelelektronik kann das Wasser höher erwärmen, wenn die Zykluszeit sonst zu kurz wäre.
     C_WW_NORMALTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"WW Normaltemperatur","REG":105,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":5.0,"MAX":65.0,"WEB_ID":"SP 83","PF":Platform.NUMBER},
     C_WW_MINIMALTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"WW Minimaltemperatur","REG":106,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":5.0,"MAX":65.0,"WEB_ID":"SP 85","PF":Platform.NUMBER},
-    C_MKR1_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 Betriebsart","REG":107,"DT":C_DT_UINT16,"VALUES":{0:"Aus",1:"Automatik",2:"Kühlen",3:"Sommer",4:"Dauerbetrieb",5:"Absenkbetrieb",6:"Urlaub",7:"Party","default":1},"WEB_ID":"SP 221"},
+    C_MKR1_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 Betriebsart","REG":107,"DT":C_DT_UINT16,"VALUES":{0: "aus",1: "automatik",2: "kuehlen",3: "sommer",4: "dauerbetrieb",5: "absenkbetrieb",6: "urlaub",7: "party","default":1},"WEB_ID":"SP 221"},
     C_MKR1_RAUMSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 Raumsolltemperatur","REG":108,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 200","PF":Platform.NUMBER},
     C_MKR1_SOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 Solltemperatur","REG":109,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":5.0,"MAX":65.0,"HA":C_MKR1_SOLLTEMPERATUR_HAND_AKTIV,"WEB_ID":"MP 66","PF":Platform.NUMBER},
     C_MKR1_SOLLTEMPERATUR_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 Solltemperatur Hand-Aktiv","REG":110,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 66"},
     C_MKR1_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR1 min Rücklauftemperatur Kühlen","REG":111,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 348","PF":Platform.NUMBER},
-    C_MKR2_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR2 Betriebsart","REG":112,"DT":C_DT_UINT16,"VALUES":{0:"Aus",1:"Automatik",2:"Kühlen",3:"Sommer",4:"Dauerbetrieb",5:"Absenkbetrieb",6:"Urlaub",7:"Party","default":1},"WEB_ID":"SP 244","PF":Platform.NUMBER},
+    C_MKR2_BETRIEBSART: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR2 Betriebsart","REG":112,"DT":C_DT_UINT16,"VALUES":{0: "aus",1: "automatik",2: "kuehlen",3: "sommer",4: "dauerbetrieb",5: "absenkbetrieb",6: "urlaub",7: "party","default":1},"WEB_ID":"SP 244","PF":Platform.NUMBER},
     C_MKR2_RAUMSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR2 Raumsolltemperatur","REG":113,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 223","PF":Platform.NUMBER},
     C_MKR2_SOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR2 Solltemperatur","REG":114,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":5.0,"MAX":65.0,"HA":C_MKR2_SOLLTEMPERATUR_HAND_AKTIV,"WEB_ID":"MP 72","PF":Platform.NUMBER},
     C_MKR2_SOLLTEMPERATUR_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"MKR2 Solltemperatur Hand-Aktiv","REG":115,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 72"},

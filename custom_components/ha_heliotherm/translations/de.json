@@ -25,7 +25,6 @@
       }
     }
   },
-  "title": "Heliotherm Heatpump",
   "entity": {
     "sensor": {
       "temp_aussen": {
@@ -59,7 +58,7 @@
         "name": "Temp. Kondensation"
       },
       "temp_heissgas": {
-        "name": "Temp. Heiügas"
+        "name": "Temp. Heißgas"
       },
       "niederdruck": {
         "name": "Niederdruck"
@@ -80,7 +79,7 @@
         "name": "Temp. Frischwasser"
       },
       "temp_aussen_verzoegert": {
-        "name": "Temp. Aussen verzügert"
+        "name": "Temp. Aussen verzögert"
       },
       "hkr_solltemp": {
         "name": "HKR Solltemp."
@@ -97,10 +96,10 @@
       "verdichteranforderung": {
         "name": "Verdichteranforderung",
         "state": {
-          "Keine Anforderung": "Keine Anforderung",
-          "Kühlen": "Kühlen",
-          "Heizen": "Heizen",
-          "Warmwasser": "Warmwasser"
+          "keine_anforderung": "Keine Anforderung",
+          "kuehlen": "Kühlen",
+          "heizen": "Heizen",
+          "warmwasser": "Warmwasser"
         }
       },
       "betriebsstunden_im_ww_betrieb": {
@@ -163,7 +162,7 @@
         "name": "Verdichter"
       },
       "stoerung": {
-        "name": "Stürung"
+        "name": "Störung"
       },
       "vierwegenventil_abtaubetrieb": {
         "name": "Vierwegenventil Abtaubetrieb"
@@ -198,7 +197,7 @@
         "name": "Ext. Anforderung"
       },
       "switch_entstoeren": {
-        "name": "Entstüren"
+        "name": "Entstören"
       },
       "switch_aussentemperatur_hand_aktiv": {
         "name": "Aussentemperatur Hand-Aktiv"
@@ -229,40 +228,40 @@
       "select_betriebsart": {
         "name": "Betriebsart",
         "state": {
-          "Aus": "Aus",
-          "Automatik": "Automatik",
-          "Kühlen": "Kühlen",
-          "Sommer": "Sommer",
-          "Dauerbetrieb": "Dauerbetrieb",
-          "Absenkbetrieb": "Absenkbetrieb",
-          "Urlaub": "Urlaub",
-          "Party": "Party"
+          "aus": "Aus",
+          "automatik": "Automatik",
+          "kuehlen": "Kühlen",
+          "sommer": "Sommer",
+          "dauerbetrieb": "Dauerbetrieb",
+          "absenkbetrieb": "Absenkbetrieb",
+          "urlaub": "Urlaub",
+          "party": "Party"
         }
       },
       "select_mkr1_betriebsart": {
         "name": "MKR1 Betriebsart",
         "state": {
-          "Aus": "Aus",
-          "Automatik": "Automatik",
-          "Kühlen": "Kühlen",
-          "Sommer": "Sommer",
-          "Dauerbetrieb": "Dauerbetrieb",
-          "Absenkbetrieb": "Absenkbetrieb",
-          "Urlaub": "Urlaub",
-          "Party": "Party"
+          "aus": "Aus",
+          "automatik": "Automatik",
+          "kuehlen": "Kühlen",
+          "sommer": "Sommer",
+          "dauerbetrieb": "Dauerbetrieb",
+          "absenkbetrieb": "Absenkbetrieb",
+          "urlaub": "Urlaub",
+          "party": "Party"
         }
       },
       "select_mkr2_betriebsart": {
         "name": "MKR2 Betriebsart",
         "state": {
-          "Aus": "Aus",
-          "Automatik": "Automatik",
-          "Kühlen": "Kühlen",
-          "Sommer": "Sommer",
-          "Dauerbetrieb": "Dauerbetrieb",
-          "Absenkbetrieb": "Absenkbetrieb",
-          "Urlaub": "Urlaub",
-          "Party": "Party"
+          "aus": "Aus",
+          "automatik": "Automatik",
+          "kuehlen": "Kühlen",
+          "sommer": "Sommer",
+          "dauerbetrieb": "Dauerbetrieb",
+          "absenkbetrieb": "Absenkbetrieb",
+          "urlaub": "Urlaub",
+          "party": "Party"
         }
       }
     },
