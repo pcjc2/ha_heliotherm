@@ -124,7 +124,7 @@
         "name": "Raumfühler 1"
       },
       "eq_ventilator_pumpe_prozent": {
-        "name": "EQ Ventilator/Pumpe [%]"
+        "name": "EQ Ventilator/Pumpe"
       },
       "wmz_heizung": {
         "name": "WMZ Heizung"

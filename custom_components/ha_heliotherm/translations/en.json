@@ -124,7 +124,7 @@
         "name": "Room temperature 1"
       },
       "eq_ventilator_pumpe_prozent": {
-        "name": "Aircoil fan [%]"
+        "name": "Aircoil fan"
       },
       "wmz_heizung": {
         "name": "WMZ Heizung"
