@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable, Awaitable
 
 import sys
 
@@ -11,6 +11,7 @@ from homeassistant.components.climate import (
     ClimateEntityDescription,
     ClimateEntityFeature,
 )
+from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import *
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -38,7 +39,7 @@ import logging
 thismodule = sys.modules[__name__]
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
-_LOGGER.info(f"{thismodule}.const loaded")
+_LOGGER.info(f"{thismodule} loaded")
 
 
 
@@ -51,6 +52,8 @@ DEFAULT_HOSTID = 1
 CONF_HOSTID = "hostid"
 CONF_HUB = "haheliotherm_hub"
 ATTR_MANUFACTURER = "Heliotherm"
+
+# --- Konstanten ---
 
 # Datentyp für coils oder discrete_inputs
 C_DT_BITS = ModbusTcpClient.DATATYPE.BITS  # "bit"     # 1 Bit
@@ -78,7 +81,7 @@ C_REG_TYPE_HOLDING_REGISTERS = 3
 C_REG_TYPE_INPUT_REGISTERS = 4
 
 # ------------------------------------------------------------
-# 1) Entity-Konstanten (C_<NAME> = "<entity_key>")
+# 2) Entity-Konstanten (C_<NAME> = "<entity_key>")
 #    >> Diese Konstanten dienen als Keys im ENTITIES_DICT.
 # ------------------------------------------------------------
 C_TEMP_AUSSEN = "temp_aussen"
@@ -214,7 +217,7 @@ C_TF22_HAND_AKTIV = "switch_tf22_hand_aktiv"
 # --------------------------------------------------------------------------------------------
 
 # Modbus-Register gemäß 20230705_Fachmannebene_RCGX_1.0.5.4_DE_mail.pdf vom 24.04.2023
-# Getestet mit Heliotherm Complete RCG 2.0.0.10 und Visualisierung 2.1.0.5
+# Getestet mit Heliotherm Complete RCG 2.1.0.5 und Visualisierung 2.1.0.5
 
 # --- ENTITIES_DICT ---
 ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
@@ -354,12 +357,11 @@ class MyBinaryEntityDescription(BinarySensorEntityDescription):
 
 
 @dataclass
-class MySelectEntityDescription(SensorEntityDescription):
-    """A class that describes Modbus select sensor entities."""
+class MySelectEntityDescription(SelectEntityDescription):
+    """A class that describes Modbus select entities."""
 
-    select_options: list[str] = None
-    default_select_option: str = None
-    setter_function = None
+    default_select_option: str | None = None
+    setter_function: Callable[[Any, str], Awaitable[None]] | None = None
 
 
 @dataclass
@@ -706,6 +708,7 @@ def init():
                     SENSOR_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
+                        translation_key=entity_key,
                         native_unit_of_measurement=unit,
                         device_class=device_class,
                         state_class=state_class,
@@ -716,6 +719,7 @@ def init():
                     BINARYSENSOR_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
+                        translation_key=entity_key,
                     )
 
                 case thismodule.MyClimateEntityDescription:
@@ -725,16 +729,21 @@ def init():
                     step=get_entity_step(props)
                     hvac_modes=get_entity_hvac_modes(props)
                     temperature_unit=get_entity_unit(props)
-                    _LOGGER.debug(f"Temperatur-Stellwert {entity_key}: {name}, {min_value}-{max_value}{temperature_unit} in {step}-er Schritten")
+                    _LOGGER.debug(
+                        f"Temperatur-Stellwert {entity_key}: {name}, {min_value}-{max_value}{temperature_unit} in {step}-er Schritten"
+                    )
                     CLIMATE_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
+                        translation_key=entity_key,
                         min_value=min_value,
                         max_value=max_value,
                         step=step,
                         hvac_modes=hvac_modes,
                         temperature_unit=temperature_unit,
-                        supported_features=props.get("FEATURES", ClimateEntityFeature.TARGET_TEMPERATURE),
+                        supported_features=props.get(
+                            "FEATURES", ClimateEntityFeature.TARGET_TEMPERATURE
+                        ),
                     )
 
                 case thismodule.MyNumberEntityDescription:
@@ -743,10 +752,13 @@ def init():
                     max_value=get_entity_max(props)
                     step=get_entity_step(props)
                     unit_of_measurement=get_entity_unit(props)
-                    _LOGGER.debug(f"Numerischer Stellwerte {entity_key}: {name}, {min_value}-{max_value}{unit_of_measurement} in {step}-er Schritten")
+                    _LOGGER.debug(
+                        f"Numerischer Stellwert {entity_key}: {name}, {min_value}-{max_value}{unit_of_measurement} in {step}-er Schritten"
+                    )
                     NUMBER_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
+                        translation_key=entity_key,
                         min_value=min_value,
                         max_value=max_value,
                         step=step,
@@ -761,16 +773,20 @@ def init():
                     BINARY_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
+                        translation_key=entity_key,
                     )
 
                 case thismodule.MySelectEntityDescription:
                     #key = f"{C_PREFIX_SELECT}_{entity_key}"
                     values, default = get_entity_select_values_and_default(props)
-                    _LOGGER.debug(f"Auswahl-Entität {entity_key}: {name}, Werte-Bereich: {values}, Default: {default}")
+                    _LOGGER.debug(
+                        f"Auswahl-Entität {entity_key}: {name}, Werte-Bereich: {values}, Default: {default}"
+                    )
                     SELECT_TYPES[entity_key] = registerclass(
                         name=name,
                         key=entity_key,
-                        select_options=values,
+                        translation_key=entity_key,
+                        options=values,
                         default_select_option=default,
                     )
 

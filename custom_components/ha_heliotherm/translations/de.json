@@ -24,5 +24,458 @@
         }
       }
     }
+  },
+  "title": "Heliotherm Heatpump",
+  "entity": {
+    "sensor": {
+      "temp_aussen": {
+        "name": "Temp. Aussen"
+      },
+      "temp_brauchwasser": {
+        "name": "Temp. Brauchwasser"
+      },
+      "temp_vorlauf": {
+        "name": "Temp. Vorlauf"
+      },
+      "temp_ruecklauf": {
+        "name": "Temp. Rücklauf"
+      },
+      "temp_pufferspeicher": {
+        "name": "Temp. Pufferspeicher"
+      },
+      "temp_eq_eintritt": {
+        "name": "Temp. EQ Eintritt"
+      },
+      "temp_eq_austritt": {
+        "name": "Temp. EQ Austritt"
+      },
+      "temp_sauggas": {
+        "name": "Temp. Sauggas"
+      },
+      "temp_verdampfung": {
+        "name": "Temp. Verdampfung"
+      },
+      "temp_kondensation": {
+        "name": "Temp. Kondensation"
+      },
+      "temp_heissgas": {
+        "name": "Temp. Heiügas"
+      },
+      "niederdruck": {
+        "name": "Niederdruck"
+      },
+      "hochdruck": {
+        "name": "Hochdruck"
+      },
+      "wmz_durchfluss": {
+        "name": "WMZ Durchfluss"
+      },
+      "n_soll_verdichter": {
+        "name": "n-Soll Verdichter"
+      },
+      "cop": {
+        "name": "COP"
+      },
+      "temp_frischwasser": {
+        "name": "Temp. Frischwasser"
+      },
+      "temp_aussen_verzoegert": {
+        "name": "Temp. Aussen verzügert"
+      },
+      "hkr_solltemp": {
+        "name": "HKR Solltemp."
+      },
+      "mkr1_solltemp": {
+        "name": "MKR1 Solltemp."
+      },
+      "mkr2_solltemp": {
+        "name": "MKR2 Solltemp."
+      },
+      "expansionsventil": {
+        "name": "Expansionsventil"
+      },
+      "verdichteranforderung": {
+        "name": "Verdichteranforderung",
+        "state": {
+          "Keine Anforderung": "Keine Anforderung",
+          "Kühlen": "Kühlen",
+          "Heizen": "Heizen",
+          "Warmwasser": "Warmwasser"
+        }
+      },
+      "betriebsstunden_im_ww_betrieb": {
+        "name": "Betriebsstunden im WW-Betrieb"
+      },
+      "betriebsstunden_im_hzg_betrieb": {
+        "name": "Betriebsstunden im HZG-Betrieb"
+      },
+      "mkr1_vorlauftemperatur": {
+        "name": "MKR1 Vorlauftemperatur"
+      },
+      "mkr1_ruecklauftemperatur": {
+        "name": "MKR1 Rücklauftemperatur"
+      },
+      "mkr2_vorlauftemperatur": {
+        "name": "MKR2 Vorlauftemperatur"
+      },
+      "mkr2_ruecklauftemperatur": {
+        "name": "MKR2 Rücklauftemperatur"
+      },
+      "raumfuehler_1": {
+        "name": "Raumfühler 1"
+      },
+      "eq_ventilator_pumpe_prozent": {
+        "name": "EQ Ventilator/Pumpe [%]"
+      },
+      "wmz_heizung": {
+        "name": "WMZ Heizung"
+      },
+      "stromzaehler_heizung": {
+        "name": "Stromzähler Heizung"
+      },
+      "wmz_brauchwasser": {
+        "name": "WMZ Brauchwasser"
+      },
+      "stromzaehler_brauchwasser": {
+        "name": "Stromzähler Brauchwasser"
+      },
+      "stromzaehler_gesamt": {
+        "name": "Stromzähler Gesamt"
+      },
+      "stromzaehler_leistung": {
+        "name": "Stromzähler Leistung"
+      },
+      "wmz_gesamt": {
+        "name": "WMZ Gesamt"
+      },
+      "wmz_leistung": {
+        "name": "WMZ Leistung"
+      }
+    },
+    "binary_sensor": {
+      "heizkreispumpe": {
+        "name": "Heizkreispumpe"
+      },
+      "pufferladepumpe": {
+        "name": "Pufferladepumpe"
+      },
+      "verdichter": {
+        "name": "Verdichter"
+      },
+      "stoerung": {
+        "name": "Stürung"
+      },
+      "vierwegenventil_abtaubetrieb": {
+        "name": "Vierwegenventil Abtaubetrieb"
+      },
+      "evu_sperre_aktiv": {
+        "name": "EVU Sperre aktiv"
+      },
+      "eq_ventilator_pumpe": {
+        "name": "EQ Ventilator/Pumpe"
+      },
+      "ww_vorrang_ww": {
+        "name": "WW Vorrang WW"
+      },
+      "kuehlen_umv_passiv": {
+        "name": "Kühlen UMV passiv"
+      }
+    },
+    "switch": {
+      "switch_ruecklaufsolltemperatur_hand_aktiv": {
+        "name": "Rücklaufsolltemperatur Hand-Aktiv"
+      },
+      "switch_mkr1_solltemperatur_hand_aktiv": {
+        "name": "MKR1 Solltemperatur Hand-Aktiv"
+      },
+      "switch_mkr2_solltemperatur_hand_aktiv": {
+        "name": "MKR2 Solltemperatur Hand-Aktiv"
+      },
+      "switch_pv_anforderung": {
+        "name": "PV Anforderung"
+      },
+      "switch_ext_anforderung": {
+        "name": "Ext. Anforderung"
+      },
+      "switch_entstoeren": {
+        "name": "Entstüren"
+      },
+      "switch_aussentemperatur_hand_aktiv": {
+        "name": "Aussentemperatur Hand-Aktiv"
+      },
+      "switch_puffertemperatur_hand_aktiv": {
+        "name": "Puffertemperatur Hand-Aktiv"
+      },
+      "switch_brauchwassertemperatur_hand_aktiv": {
+        "name": "Brauchwassertemperatur Hand-Aktiv"
+      },
+      "switch_2_stufe_handwert": {
+        "name": "2. Stufe Handwert"
+      },
+      "switch_2_stufe_hand_aktiv": {
+        "name": "2. Stufe Hand-Aktiv"
+      },
+      "switch_evu_sperre_handwert": {
+        "name": "EVU Sperre Handwert"
+      },
+      "switch_evu_sperre_hand_aktiv": {
+        "name": "EVU Sperre Hand-Aktiv"
+      },
+      "switch_tf22_hand_aktiv": {
+        "name": "TF22 Hand-Aktiv"
+      }
+    },
+    "select": {
+      "select_betriebsart": {
+        "name": "Betriebsart",
+        "state": {
+          "Aus": "Aus",
+          "Automatik": "Automatik",
+          "Kühlen": "Kühlen",
+          "Sommer": "Sommer",
+          "Dauerbetrieb": "Dauerbetrieb",
+          "Absenkbetrieb": "Absenkbetrieb",
+          "Urlaub": "Urlaub",
+          "Party": "Party"
+        }
+      },
+      "select_mkr1_betriebsart": {
+        "name": "MKR1 Betriebsart",
+        "state": {
+          "Aus": "Aus",
+          "Automatik": "Automatik",
+          "Kühlen": "Kühlen",
+          "Sommer": "Sommer",
+          "Dauerbetrieb": "Dauerbetrieb",
+          "Absenkbetrieb": "Absenkbetrieb",
+          "Urlaub": "Urlaub",
+          "Party": "Party"
+        }
+      },
+      "select_mkr2_betriebsart": {
+        "name": "MKR2 Betriebsart",
+        "state": {
+          "Aus": "Aus",
+          "Automatik": "Automatik",
+          "Kühlen": "Kühlen",
+          "Sommer": "Sommer",
+          "Dauerbetrieb": "Dauerbetrieb",
+          "Absenkbetrieb": "Absenkbetrieb",
+          "Urlaub": "Urlaub",
+          "Party": "Party"
+        }
+      }
+    },
+    "number": {
+      "climate_raumsolltemperatur": {
+        "name": "Raumsolltemperatur"
+      },
+      "climate_ruecklaufsolltemperatur": {
+        "name": "Rücklaufsolltemperatur"
+      },
+      "climate_min_ruecklauftemperatur_kuehlen": {
+        "name": "min Rücklauftemperatur Kühlen"
+      },
+      "climate_ww_normaltemperatur": {
+        "name": "WW Normaltemperatur"
+      },
+      "climate_ww_minimaltemperatur": {
+        "name": "WW Minimaltemperatur"
+      },
+      "climate_mkr1_raumsolltemperatur": {
+        "name": "MKR1 Raumsolltemperatur"
+      },
+      "climate_mkr1_solltemperatur": {
+        "name": "MKR1 Solltemperatur"
+      },
+      "climate_mkr1_min_ruecklauftemperatur_kuehlen": {
+        "name": "MKR1 min Rücklauftemperatur Kühlen"
+      },
+      "climate_mkr2_raumsolltemperatur": {
+        "name": "MKR2 Raumsolltemperatur"
+      },
+      "climate_mkr2_solltemperatur": {
+        "name": "MKR2 Solltemperatur"
+      },
+      "climate_mkr2_min_ruecklauftemperatur_kuehlen": {
+        "name": "MKR2 min Rücklauftemperatur Kühlen"
+      },
+      "climate_pv_heizen_offset": {
+        "name": "PV Heizen Offset"
+      },
+      "climate_pv_kuehlen_offset": {
+        "name": "PV Kuehlen Offset"
+      },
+      "climate_pv_heizen_offset_mkr1": {
+        "name": "PV Heizen Offset MKR1"
+      },
+      "climate_pv_kuehlen_offset_mkr1": {
+        "name": "PV Kühlen Offset MKR1"
+      },
+      "climate_pv_heizen_offset_mkr2": {
+        "name": "PV Heizen Offset MKR2"
+      },
+      "climate_pv_kuehlen_offset_mkr2": {
+        "name": "PV Kühlen Offset MKR2"
+      },
+      "climate_ww_normal_max": {
+        "name": "WW Normal Max"
+      },
+      "input_vorgabe_leistungsaufnahme": {
+        "name": "Vorgabe Leistungsaufnahme"
+      },
+      "input_vorgabe_verdichterdrehzahl": {
+        "name": "Vorgabe Verdichterdrehzahl"
+      },
+      "climate_aussentemperatur_handwert": {
+        "name": "Aussentemperatur Handwert"
+      },
+      "climate_puffertemperatur_handwert": {
+        "name": "Puffertemperatur Handwert"
+      },
+      "climate_brauchwassertemperatur_handwert": {
+        "name": "Brauchwassertemperatur Handwert"
+      },
+      "climate_hkr_heizgrenze": {
+        "name": "HKR Heizgrenze"
+      },
+      "climate_hkr_ruecklaufsoll_bei_heizgrenze": {
+        "name": "HKR Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_hkr_ruecklaufsoll_bei_0_c": {
+        "name": "HKR Rücklaufsoll bei 0°C"
+      },
+      "climate_hkr_ruecklaufsoll_bei_15_c": {
+        "name": "HKR Rücklaufsoll bei -15°C"
+      },
+      "climate_mkr1_heizgrenze": {
+        "name": "MKR1 Heizgrenze"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_heizgrenze": {
+        "name": "MKR1 Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_0_c": {
+        "name": "MKR1 Rücklaufsoll bei 0°C"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_15_c": {
+        "name": "MKR1 Rücklaufsoll bei -15°C"
+      },
+      "climate_mkr2_heizgrenze": {
+        "name": "MKR2 Heizgrenze"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_heizgrenze": {
+        "name": "MKR2 Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_0_c": {
+        "name": "MKR2 Rücklaufsoll bei 0°C"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_15_c": {
+        "name": "MKR2 Rücklaufsoll bei -15°C"
+      },
+      "input_tf22_handwert": {
+        "name": "TF22 Handwert"
+      }
+    },
+    "climate": {
+      "climate_raumsolltemperatur": {
+        "name": "Raumsolltemperatur"
+      },
+      "climate_ruecklaufsolltemperatur": {
+        "name": "Rücklaufsolltemperatur"
+      },
+      "climate_min_ruecklauftemperatur_kuehlen": {
+        "name": "min Rücklauftemperatur Kühlen"
+      },
+      "climate_ww_normaltemperatur": {
+        "name": "WW Normaltemperatur"
+      },
+      "climate_ww_minimaltemperatur": {
+        "name": "WW Minimaltemperatur"
+      },
+      "climate_mkr1_raumsolltemperatur": {
+        "name": "MKR1 Raumsolltemperatur"
+      },
+      "climate_mkr1_solltemperatur": {
+        "name": "MKR1 Solltemperatur"
+      },
+      "climate_mkr1_min_ruecklauftemperatur_kuehlen": {
+        "name": "MKR1 min Rücklauftemperatur Kühlen"
+      },
+      "climate_mkr2_raumsolltemperatur": {
+        "name": "MKR2 Raumsolltemperatur"
+      },
+      "climate_mkr2_solltemperatur": {
+        "name": "MKR2 Solltemperatur"
+      },
+      "climate_mkr2_min_ruecklauftemperatur_kuehlen": {
+        "name": "MKR2 min Rücklauftemperatur Kühlen"
+      },
+      "climate_pv_heizen_offset": {
+        "name": "PV Heizen Offset"
+      },
+      "climate_pv_kuehlen_offset": {
+        "name": "PV Kühlen Offset"
+      },
+      "climate_pv_heizen_offset_mkr1": {
+        "name": "PV Heizen Offset MKR1"
+      },
+      "climate_pv_kuehlen_offset_mkr1": {
+        "name": "PV Kühlen Offset MKR1"
+      },
+      "climate_pv_heizen_offset_mkr2": {
+        "name": "PV Heizen Offset MKR2"
+      },
+      "climate_pv_kuehlen_offset_mkr2": {
+        "name": "PV Kühlen Offset MKR2"
+      },
+      "climate_ww_normal_max": {
+        "name": "WW Normal Max"
+      },
+      "climate_aussentemperatur_handwert": {
+        "name": "Aussentemperatur Handwert"
+      },
+      "climate_puffertemperatur_handwert": {
+        "name": "Puffertemperatur Handwert"
+      },
+      "climate_brauchwassertemperatur_handwert": {
+        "name": "Brauchwassertemperatur Handwert"
+      },
+      "climate_hkr_heizgrenze": {
+        "name": "HKR Heizgrenze"
+      },
+      "climate_hkr_ruecklaufsoll_bei_heizgrenze": {
+        "name": "HKR Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_hkr_ruecklaufsoll_bei_0_c": {
+        "name": "HKR Rücklaufsoll bei 0°C"
+      },
+      "climate_hkr_ruecklaufsoll_bei_15_c": {
+        "name": "HKR Rücklaufsoll bei -15°C"
+      },
+      "climate_mkr1_heizgrenze": {
+        "name": "MKR1 Heizgrenze"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_heizgrenze": {
+        "name": "MKR1 Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_0_c": {
+        "name": "MKR1 Rücklaufsoll bei 0°C"
+      },
+      "climate_mkr1_ruecklaufsoll_bei_15_c": {
+        "name": "MKR1 Rücklaufsoll bei -15°C"
+      },
+      "climate_mkr2_heizgrenze": {
+        "name": "MKR2 Heizgrenze"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_heizgrenze": {
+        "name": "MKR2 Rücklaufsoll bei Heizgrenze"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_0_c": {
+        "name": "MKR2 Rücklaufsoll bei 0°C"
+      },
+      "climate_mkr2_ruecklaufsoll_bei_15_c": {
+        "name": "MKR2 Rücklaufsoll bei -15°C"
+      }
+    }
   }
 }
