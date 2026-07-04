@@ -27,6 +27,8 @@ from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
+from .webmi_version import detect_firmware_version
+
 from . import const
 from .const import (
     DEFAULT_NAME,
@@ -35,13 +37,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     CONF_HOSTID,
-    ENTITIES_DICT,
-    BINARYSENSOR_TYPES,
-    SENSOR_TYPES,
-    SELECT_TYPES,
-    CLIMATE_TYPES,
-    NUMBER_TYPES,
-    BINARY_TYPES,
+    CONF_FIRMWARE,
     get_entity_switch,
     get_entity_type,
     get_entity_select,
@@ -55,14 +51,6 @@ from .const import (
     is_entity_switch,
     is_entity_select,
     is_entity_climate,
-    C_MIN_INPUT_REGISTER,
-    C_MAX_INPUT_REGISTER,
-    C_MIN_HOLDING_REGISTER,
-    C_MAX_HOLDING_REGISTER,
-    C_MIN_COILS,
-    C_MAX_COILS,
-    C_MIN_DISCRETE_INPUTS,
-    C_MAX_DISCRETE_INPUTS,
 )
 
 
@@ -71,7 +59,7 @@ import logging
 
 thismodule = sys.modules[__name__]
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+_LOGGER.setLevel(logging.INFO)
 _LOGGER.info(f"{thismodule} loaded.")
 
 PLATFORMS = [
@@ -113,7 +101,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     _LOGGER.info("Setup %s.%s", DOMAIN, name)
 
     hub = MyModbusHub(hass, name, host, port, scan_interval, hostid)
-    # """Register the hub."""
+
+    version = await hub.detect_firmware_version()
+    if not version:
+        version = entry.options.get(CONF_FIRMWARE, None)
+
+    _LOGGER.info(f"Firmware-Version: {version}")
+
+    const.init(version)
+
     hass.data[DOMAIN][name] = {"hub": hub}
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -188,6 +184,9 @@ class MyModbusHub:
             self._unsub_interval_method()
             self._unsub_interval_method = None
             self.close()
+
+    async def detect_firmware_version(self) -> str | None:
+        return await detect_firmware_version(self._hass, self._client.comm_params.host)
 
     async def async_refresh_modbus_data(self, _now: Optional[int] = None) -> None:
         """Time to update."""
@@ -334,7 +333,7 @@ class MyModbusHub:
         props = get_entity_props(entity_key)
         if not props:
             raise ValueError(
-                f"Ungültige Entität {entity_key}. Definition in ENTITIES_DICT nicht gefunden."
+                f"Ungültige Entität {entity_key}. Definition in const.ENTITIES_DICT nicht gefunden."
             )
         if is_entity_readonly(props):
             raise PermissionError(f"Register {entity_key} ist read-only.")
@@ -372,7 +371,7 @@ class MyModbusHub:
             reg_words = self._client.convert_to_registers(value=raw, data_type=dt)
 
         # 2) Schreiben (run blocking modbus in executor)
-        await self._write_modbus_registers(reg, reg_words, dt)
+        await self._hass.async_add_executor_job(self._write_modbus_registers, reg, reg_words, dt)
 
         # 3) Hand-Aktiv setzen
         entity_ha = get_entity_ha(props)
@@ -382,7 +381,7 @@ class MyModbusHub:
             value_ha = 1
             _LOGGER.info(f"Schreibe Hand-Aktiv in {entity_ha} -> {value_ha}")
             if reg_ha and (dt_ha == ModbusTcpClient.DATATYPE.UINT16):
-                await self._client.write_register(address=reg_ha, value=value_ha, device_id=self._hostid)
+                await self._hass.async_add_executor_job(self._write_modbus_registers, reg_ha, (value_ha,), dt_ha)
             else:
                 raise ValueError(f"Fehlende/fehlerhafte Registerdefinition für {entity_ha}.")
         # 4) Daten neu lesen
@@ -423,21 +422,28 @@ class MyModbusHub:
     def read_modbus_registers(self):
         """Read from modbus registers"""
 
-        if C_MAX_INPUT_REGISTER >= C_MIN_INPUT_REGISTER:
+        if const.C_MAX_INPUT_REGISTER >= const.C_MIN_INPUT_REGISTER:
             _LOGGER.debug(
-                f"Lese Input-Register {C_MIN_INPUT_REGISTER} bis {C_MAX_INPUT_REGISTER}..."
+                f"Lese Input-Register {const.C_MIN_INPUT_REGISTER} bis {const.C_MAX_INPUT_REGISTER}..."
             )
             with self._lock:
                 modbusdata_input = self._client.read_input_registers(
-                    address=C_MIN_INPUT_REGISTER,
-                    count=C_MAX_INPUT_REGISTER - C_MIN_INPUT_REGISTER + 1,
+                    address=const.C_MIN_INPUT_REGISTER,
+                    count=const.C_MAX_INPUT_REGISTER - const.C_MIN_INPUT_REGISTER + 1,
                     device_id=self._hostid,
                 )
-                if modbusdata_input is None or not hasattr(
-                    modbusdata_input, "registers"
-                ):
-                    _LOGGER.error("Fehler beim Lesen der Input-Register.")
+                if modbusdata_input is None:
+                    _LOGGER.error("Fehler beim Lesen der Input-Register: keine Antwort (None).")
                     return False
+
+                if not hasattr(modbusdata_input, "registers"):
+                    _LOGGER.error("Fehler beim Lesen der Input-Register: ungültige Antwortstruktur.")
+                    return False
+
+                if not modbusdata_input.registers:
+                    _LOGGER.error("Fehler beim Lesen der Input-Register: leere Antwort.")
+                    return False
+
                 _LOGGER.debug(
                     f"{len(modbusdata_input.registers)} Input-Register: {modbusdata_input.registers}"
                 )
@@ -446,21 +452,28 @@ class MyModbusHub:
             _LOGGER.debug("Keine Input-Register definiert.")
             input_regs = None
 
-        if C_MAX_HOLDING_REGISTER >= C_MIN_HOLDING_REGISTER:
+        if const.C_MAX_HOLDING_REGISTER >= const.C_MIN_HOLDING_REGISTER:
             _LOGGER.debug(
-                f"Lese Holding-Register {C_MIN_HOLDING_REGISTER} bis {C_MAX_HOLDING_REGISTER}..."
+                f"Lese Holding-Register {const.C_MIN_HOLDING_REGISTER} bis {const.C_MAX_HOLDING_REGISTER}..."
             )
             with self._lock:
                 modbusdata_holding = self._client.read_holding_registers(
-                    address=C_MIN_HOLDING_REGISTER,
-                    count=C_MAX_HOLDING_REGISTER - C_MIN_HOLDING_REGISTER + 1,
+                    address=const.C_MIN_HOLDING_REGISTER,
+                    count=const.C_MAX_HOLDING_REGISTER - const.C_MIN_HOLDING_REGISTER + 1,
                     device_id=self._hostid,
                 )
-                if modbusdata_holding is None or not hasattr(
-                    modbusdata_holding, "registers"
-                ):
-                    _LOGGER.error("Fehler beim Lesen der Holding-Register.")
+                if modbusdata_holding is None:
+                    _LOGGER.error("Fehler beim Lesen der Holding-Register: keine Antwort (None).")
                     return False
+
+                if not hasattr(modbusdata_holding, "registers"):
+                    _LOGGER.error("Fehler beim Lesen der Holding-Register: ungültige Antwortstruktur.")
+                    return False
+
+                if not modbusdata_holding.registers:
+                    _LOGGER.error("Fehler beim Lesen der Holding-Register: leere Antwort.")
+                    return False
+
                 _LOGGER.debug(
                     f"{len(modbusdata_holding.registers)} Holding-Register: {modbusdata_holding.registers}"
                 )
@@ -469,17 +482,26 @@ class MyModbusHub:
             _LOGGER.debug("Keine Holding-Register definiert.")
             holding_regs = None
 
-        if C_MAX_COILS >= C_MIN_COILS:
-            _LOGGER.debug(f"Lese Coils {C_MIN_COILS} bis {C_MAX_COILS}...")
+        if const.C_MAX_COILS >= const.C_MIN_COILS:
+            _LOGGER.debug(f"Lese Coils {const.C_MIN_COILS} bis {const.C_MAX_COILS}...")
             with self._lock:
                 modbusdata_coils = self._client.read_coils(
-                    address=C_MIN_COILS,
-                    count=C_MAX_COILS - C_MIN_COILS + 1,
+                    address=const.C_MIN_COILS,
+                    count=const.C_MAX_COILS - const.C_MIN_COILS + 1,
                     device_id=self._hostid,
                 )
-                if modbusdata_coils is None or not hasattr(modbusdata_coils, "bits"):
-                    _LOGGER.error("Fehler beim Lesen der Coils.")
+                if modbusdata_coils is None:
+                    _LOGGER.error("Fehler beim Lesen der Coils: keine Antwort (None).")
                     return False
+
+                if not hasattr(modbusdata_coils, "bits"):
+                    _LOGGER.error("Fehler beim Lesen der Coils: ungültige Antwortstruktur.")
+                    return False
+
+                if not modbusdata_coils.bits:
+                    _LOGGER.error("Fehler beim Lesen der Coils: leere Antwort.")
+                    return False
+
                 _LOGGER.debug(
                     f"{len(modbusdata_coils.bits)} Coils: {modbusdata_coils.bits}"
                 )
@@ -488,21 +510,28 @@ class MyModbusHub:
             _LOGGER.debug("Keine Coils definiert.")
             coils = None
 
-        if C_MAX_DISCRETE_INPUTS >= C_MIN_DISCRETE_INPUTS:
+        if const.C_MAX_DISCRETE_INPUTS >= const.C_MIN_DISCRETE_INPUTS:
             _LOGGER.debug(
-                f"Lese Discrete Inputs {C_MIN_DISCRETE_INPUTS} bis {C_MAX_DISCRETE_INPUTS} ..."
+                f"Lese Discrete Inputs {const.C_MIN_DISCRETE_INPUTS} bis {const.C_MAX_DISCRETE_INPUTS} ..."
             )
             with self._lock:
                 modbusdata_discrete = self._client.read_discrete_inputs(
-                    address=C_MIN_DISCRETE_INPUTS,
-                    count=C_MAX_DISCRETE_INPUTS - C_MIN_DISCRETE_INPUTS + 1,
+                    address=const.C_MIN_DISCRETE_INPUTS,
+                    count=const.C_MAX_DISCRETE_INPUTS - const.C_MIN_DISCRETE_INPUTS + 1,
                     device_id=self._hostid,
                 )
-                if modbusdata_discrete is None or not hasattr(
-                    modbusdata_discrete, "bits"
-                ):
-                    _LOGGER.error("Fehler beim Lesen der Discrete Inputs.")
+                if modbusdata_discrete is None:
+                    _LOGGER.error("Fehler beim Lesen der Discrete Inputs: keine Antwort (None).")
                     return False
+
+                if not hasattr(modbusdata_discrete, "bits"):
+                    _LOGGER.error("Fehler beim Lesen der Discrete Inputs: ungültige Antwortstruktur.")
+                    return False
+
+                if not modbusdata_discrete.bits:
+                    _LOGGER.error("Fehler beim Lesen der Discrete Inputs: leere Antwort.")
+                    return False
+
                 _LOGGER.debug(
                     f"{len(modbusdata_discrete.bits)} Discrete Inputs: {modbusdata_discrete.bits}"
                 )
@@ -511,7 +540,7 @@ class MyModbusHub:
             _LOGGER.debug("Keine Discrete Inputs definiert.")
             discrete = None
 
-        for entity_key, props in ENTITIES_DICT.items():
+        for entity_key, props in const.ENTITIES_DICT.items():
             reg_type = get_entity_type(props)
             reg, dt = get_entity_reg(props)
             if reg is None:
@@ -519,18 +548,18 @@ class MyModbusHub:
             _LOGGER.debug(f"Lese Entität '{entity_key}'.")
             match reg_type:
                 case const.C_REG_TYPE_COILS:
-                    raw = self.read_entity_value(coils, reg - C_MIN_COILS, dt)
+                    raw = self.read_entity_value(coils, reg - const.C_MIN_COILS, dt)
                 case const.C_REG_TYPE_DISCRETE_INPUTS:
                     raw = self.read_entity_value(
-                        discrete, reg - C_MIN_DISCRETE_INPUTS, dt
+                        discrete, reg - const.C_MIN_DISCRETE_INPUTS, dt
                     )
                 case const.C_REG_TYPE_INPUT_REGISTERS:
                     raw = self.read_entity_value(
-                        input_regs, reg - C_MIN_INPUT_REGISTER, dt
+                        input_regs, reg - const.C_MIN_INPUT_REGISTER, dt
                     )
                 case const.C_REG_TYPE_HOLDING_REGISTERS:
                     raw = self.read_entity_value(
-                        holding_regs, reg - C_MIN_HOLDING_REGISTER, dt
+                        holding_regs, reg - const.C_MIN_HOLDING_REGISTER, dt
                     )
 
             if is_entity_switch(props):
@@ -553,7 +582,7 @@ class MyModbusHub:
 
     # ***************************************** SCHREIBEN **************************************************************
 
-    async def _write_modbus_registers(
+    def _write_modbus_registers(
         self, base_reg: int, reg_values: Iterable[int], dt: ModbusTcpClient.DATATYPE
     ):
         """
@@ -565,24 +594,24 @@ class MyModbusHub:
         """
         _LOGGER.info(f"Schreibzugriff auf Register {base_reg}: {reg_values}")
 
+        with self._lock:
+            if not self._client.connect():
+                _LOGGER.warning("Modbus connect failed")
+                return
 
-        if not self._client.connect():
-            _LOGGER.warning("Modbus connect failed")
-            return
-
-        try:
-            for offset, word in enumerate(reg_values):
-                if dt == ModbusTcpClient.DATATYPE.BITS:
-                    self._client.write_coil(
-                        address=base_reg + offset,
-                        value=bool(word),
-                        device_id=self._hostid,
-                    )
-                else:
-                    self._client.write_register(
-                        address=base_reg + offset,
-                        value=int(word) & 0xFFFF,
-                        device_id=self._hostid,
-                    )
-        finally:
-            self._client.close()
+            try:
+                for offset, word in enumerate(reg_values):
+                    if dt == ModbusTcpClient.DATATYPE.BITS:
+                        self._client.write_coil(
+                            address=base_reg + offset,
+                            value=bool(word),
+                            device_id=self._hostid,
+                        )
+                    else:
+                        self._client.write_register(
+                            address=base_reg + offset,
+                            value=int(word) & 0xFFFF,
+                            device_id=self._hostid,
+                        )
+            finally:
+                self._client.close()
