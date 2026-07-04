@@ -284,7 +284,7 @@
         "name": "Return temperature target"
       },
       "climate_min_ruecklauftemperatur_kuehlen": {
-        "name": "Min return temperature (cooling)"
+        "name": "min return temperature (cooling)"
       },
       "climate_ww_normaltemperatur": {
         "name": "DHW normal temperature"
@@ -338,7 +338,7 @@
         "name": "Specified power consumption"
       },
       "input_vorgabe_verdichterdrehzahl": {
-        "name": "Compressor speed specified"
+        "name": "Specified compressor speed"
       },
       "climate_aussentemperatur_handwert": {
         "name": "Outside temperature hand value"
