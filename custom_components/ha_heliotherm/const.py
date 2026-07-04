@@ -282,7 +282,7 @@ ENTITIES_DICT: Dict[str, Dict[str, Any]] = {
     C_RAUMSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Raumsolltemperatur","REG":101,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 69","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Rücklaufsolltemperatur","REG":102,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":0.5,"MIN":5.0,"MAX":65.0,"HA":C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV,"WEB_ID":"MP 57","PF":Platform.NUMBER},
     C_RUECKLAUFSOLLTEMPERATUR_HAND_AKTIV: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"Rücklaufsolltemperatur Hand-Aktiv","REG":103,"DT":C_DT_UINT16,"SWITCH":{"off":0,"on":1},"WEB_ID":"MP 57"},
-    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min Rücklauftemperatur Kühlen","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":15.0,"MAX":25.0,"WEB_ID":"SP 175","PF":Platform.NUMBER},
+    C_MIN_RUECKLAUFTEMPERATUR_KUEHLEN: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"min Rücklauftemperatur Kühlen","REG":104,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":10.0,"MAX":25.0,"WEB_ID":"SP 175","PF":Platform.NUMBER},
     # Achtung: Abweichend zur Originalimplementierung: Dies ist 105/106 *KEIN* Regler mit ClimateEntityFeature.TARGET_TEMPERATURE_RANGE, sondern 106 ist die Frostschutzgrenze und 105 der Zielwert für die WW-Bereitung!!
     # Die Normaltemperatur ist nur eine Vorgabe, die Regelelektronik kann das Wasser höher erwärmen, wenn die Zykluszeit sonst zu kurz wäre.
     C_WW_NORMALTEMPERATUR: {"RT": C_REG_TYPE_HOLDING_REGISTERS,"NAME":"WW Normaltemperatur","REG":105,"DT":C_DT_INT16,"FAKTOR":0.1,"UNIT":"°C","STEP":1.0,"MIN":5.0,"MAX":65.0,"WEB_ID":"SP 83","PF":Platform.NUMBER},
